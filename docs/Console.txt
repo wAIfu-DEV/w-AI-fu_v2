@@ -1,0 +1,4 @@
+TAGS[console]
+TITLE[The Console]
+The console is where you will be able to monitor, interact and moderate your 
+AI Vtuber.

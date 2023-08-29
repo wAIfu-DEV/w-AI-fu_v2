@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="icon.ico">
+    <link rel="stylesheet" href="css/style.css">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <title>w-AI-fu</title>
+</head>
+<body>
+    <header>
+        <div>
+            <img src="icon.ico" alt="logo">
+            <div id="header-text">
+                <h1>w-AI-fu</h1>
+                <p>2.0.0</p>
+            </div>
+        </div>
+        <spacer></spacer>
+        <nav id="nav-bar">
+            <navbutton class="button important" linkedpage="page-console">Console</navbutton>
+            <navbutton class="button" linkedpage="page-parameters">Parameters</navbutton>
+            <navbutton class="button" linkedpage="page-characters">Characters</navbutton>
+            <navbutton class="button" linkedpage="page-accounts">Accounts</navbutton>
+        </nav>
+    </header>
+    
+    <section id="page-console" class="page">
+        <div id="console-wrapper">
+            <div id="console">
+                <div id="console-header">
+                    <div id="console-character-title">Character</div>
+                    <tmpl-select-input id="console-character-select" options="" default=""></tmpl-select-input>
+                    <hint title="Which character to load and talk to."></hint>
+                    <div id="console-context-title">Context</div>
+                    <div id="console-context" contenteditable="true"
+                        placeholder="Short description of the current context, situation."></div>
+                </div>
+                <div id="console-terminal"></div>
+                <div id="console-input">
+                    <div id="username-box" contenteditable="true" placeholder="Name">USER</div>
+                    <div id="console-inputbox" contenteditable="true"
+                        placeholder="Write here to talk to the character."></div>
+                    <div id="console-inputbox-send" class="button">Send</div>
+                </div>
+                <div id="console-controls">
+                    <div id="control-interrupt" class="control-button button important">Interrupt</div>
+                    <div id="control-pause" class="control-button button">Pause</div>
+                    <div id="control-reset" class="control-button button">Clear Memory</div>
+                    <hint title="[Interrupt]: Stop the character in its speech.&#10;[Pause]: Toggleable, prevents the character from talking until it is unpaused.&#10;[Clear Memory]: Erases the character's short-term memory." ></hint>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="page-parameters" class="page" style="display: none;">
+        <div id="parameters-wrapper">
+            <div id="parameters-header"></div>
+            <div id="parameters"></div>
+            <div id="parameters-footer">
+                <div id="parameters-save-button" class="button important">Save</div>
+            </div>
+        </div>
+    </section>
+    <section id="page-characters" class="page" style="display: none;">
+        <div id="characters-wrapper">
+            <div id="characters">
+                <span id="character-edit-selection">
+                    <p>Character To Edit</p>
+                    <tmpl-select-input id="character-edit-select" option="" default=""></tmpl-select-input>
+                </span>
+                <span>
+                    <p>Character Name</p>
+                    <div id="character-edit-name" style="white-space: pre-line;" contenteditable="true"></div>
+                </span>
+                <span>
+                    <p>Character Description</p>
+                    <div id="character-edit-desc" style="white-space: pre-line;" contenteditable="true"></div>
+                </span>
+                <span>
+                    <p>Context Dialogue</p>
+                    <div id="character-edit-dialogue" style="white-space: pre-line;" contenteditable="true"></div>
+                </span>
+                <span>
+                    <p>Voice</p>
+                    <div id="character-edit-voice" style="white-space: pre-line;" contenteditable="true"></div>
+                </span>
+            </div>
+            <div id="characters-footer">
+                <div id="characters-save-button" class="button important">Save</div>
+            </div>
+        </div>
+    </section>
+    <section id="page-accounts" class="page" style="display: none;">
+        <div id="accounts-wrapper">
+            <div id="accounts"></div>
+            <div id="accounts-footer">
+                <div id="accounts-save-button" class="button important">Save</div>
+            </div>
+        </div>
+    </section>
+    <footer></footer>
+
+    <script>
+        /** @param {HTMLInputElement} element */
+        function tmpl_number_input_set(element) {
+            element.value = element.parentElement.getAttribute('value');
+            element.max = element.parentElement.getAttribute('max');
+            element.min = element.parentElement.getAttribute('min');
+            element.setAttribute('default', element.parentElement.getAttribute('default'));
+        }
+        /** @param {HTMLInputElement} element */
+        function tmp_number_input_change(element) {
+            if (Number(element.value) === NaN || element.value === '') {
+                element.value = element.getAttribute('default');
+            }
+        }
+    </script>
+    <template id="tmpl-number-input">
+        <input class="number-input" type="number" onload="tmpl_number_input_set(this)"
+            onchange="tmp_number_input_change(this)"/>
+    </template>
+
+    <script>
+        /** @param {HTMLInputElement} element */
+        function tmpl_string_input_set(element) {
+            element.value = element.parentElement.getAttribute('value');
+            element.setAttribute('default', element.parentElement.getAttribute('default'));
+        }
+    </script>
+    <template id="tmpl-string-input">
+        <input class="string-input" type="text" onload="tmpl_string_input_set(this)"/>
+    </template>
+
+    <script>
+        /** @param {HTMLInputElement} element */
+        function tmpl_check_input_set(element) {
+            element.checked = (element.parentElement.getAttribute('checked') === 'true') ? true : false;
+        }
+    </script>
+    <template id="tmpl-check-input">
+        <input class="checkbox-input" type="checkbox" onload="tmpl_check_input_set(this)"/>
+    </template>
+
+    <script>
+        /** @param {HTMLSelectElement} element */
+        function tmpl_select_input_set(element) {
+            const unparsed_list = element.parentElement.getAttribute('options');
+            if (unparsed_list === null || unparsed_list === undefined) {
+                return;
+            }
+            const default_option = element.parentElement.getAttribute('default');
+            const parsed_list = unparsed_list.split(',');
+            for (let item of parsed_list) {
+                let new_option = document.createElement('option');
+                new_option.textContent = item;
+                if (item === default_option)
+                    new_option.setAttribute('selected', 'selected');
+                element.appendChild(new_option);
+            }
+        }
+    </script>
+    <template id="tmpl-select-input">
+        <select class="select-input" onload="tmpl_select_input_set(this)"></select>
+    </template>
+
+    <script>
+        /** @param {HTMLElement} element */
+        function tmpl_list_input_addItem(element, value = "") {
+            let list_wrapper = element.parentElement;
+            let list_container = list_wrapper.children[0];
+            let new_entry = document.createElement('div');
+            new_entry.classList.add('list-entry');
+            let new_item = document.createElement('div');
+            new_item.classList.add('list-item');
+            new_item.setAttribute('contenteditable', 'true');
+            new_item.setAttribute('spellcheck', 'false');
+            new_item.textContent = value;
+            let remove_button = document.createElement('div');
+            remove_button.classList.add('list-remove-button');
+            remove_button.textContent = "–";
+            new_entry.appendChild(new_item);
+            new_entry.appendChild(remove_button);
+            list_container.appendChild(new_entry);
+            remove_button.onclick = () => {
+                new_entry.parentElement.removeChild(new_entry);
+            };
+        }
+        /** @param {HTMLElement} element */
+        function tmpl_list_input_set(element) {
+            let add_button = element.querySelector('.list-add-button');
+            let unparsed_list = element.parentElement.getAttribute('list');
+            if (unparsed_list === "" || unparsed_list === null) return;
+
+            let parsed_list = unparsed_list.split(',');
+            for (let item of parsed_list) {
+                tmpl_list_input_addItem(add_button, item);
+            }
+        }
+    </script>
+    <template id="tmpl-list-input">
+        <div class="list-wrapper" onload="tmpl_list_input_set(this)">
+            <div class="list"></div>
+            <div class="list-add-button" onclick="tmpl_list_input_addItem(this)">+</div>
+        </div>
+    </template>
+
+    <script>
+        /** @param {HTMLElement} element */
+        function tmpl_vts_emotes_list_input_addItem(element, name="", talking_sequence=[], idle_sequence=[], reset_sequence=[]) {
+            let new_entry = document.createElement('div');
+            new_entry.classList.add('biglist-entry');
+            let head_line = document.createElement('div');
+            head_line.classList.add('biglist-entry-line');
+            let head_p = document.createElement('p');
+            head_p.textContent = "Name";
+            let head_name = document.createElement('tmpl-string-input');
+            head_name.setAttribute('value', name);
+            head_name.setAttribute('default', '');
+            let remove_btn = document.createElement('div');
+            remove_btn.textContent = "–";
+            remove_btn.classList.add('list-remove-button');
+            let talk_line = document.createElement('div');
+            talk_line.classList.add('biglist-entry-line');
+            let talk_p = document.createElement('p');
+            talk_p.textContent = "Talking Hotkey Sequence";
+            let talk_list = document.createElement('tmpl-list-input');
+            talk_list.setAttribute('list', talking_sequence.join(','));
+            let idle_line = document.createElement('div');
+            idle_line.classList.add('biglist-entry-line');
+            let idle_p = document.createElement('p');
+            idle_p.textContent = "Idle Hotkey Sequence";
+            let idle_list = document.createElement('tmpl-list-input');
+            idle_list.setAttribute('list', idle_sequence.join(','));
+            let reset_line = document.createElement('div');
+            reset_line.classList.add('biglist-entry-line');
+            let reset_p = document.createElement('p');
+            reset_p.textContent = "Reset Hotkey Sequence";
+            let reset_list = document.createElement('tmpl-list-input');
+            reset_list.setAttribute('list', reset_sequence.join(','));
+            head_line.appendChild(head_p);
+            head_line.appendChild(head_name);
+            head_line.appendChild(remove_btn);
+            talk_line.appendChild(talk_p);
+            talk_line.appendChild(talk_list);
+            idle_line.appendChild(idle_p);
+            idle_line.appendChild(idle_list);
+            reset_line.appendChild(reset_p);
+            reset_line.appendChild(reset_list);
+            new_entry.appendChild(head_line);
+            new_entry.appendChild(talk_line);
+            new_entry.appendChild(idle_line);
+            new_entry.appendChild(reset_line);
+            element.parentElement.firstElementChild.appendChild(new_entry);
+            initializeTemplates();
+            remove_btn.onclick = () => {
+                new_entry.parentElement.removeChild(new_entry);
+            };
+        }
+        /** @param {HTMLElement} element */
+        function tmpl_vts_emotes_list_input_set(element) {
+            let template = element.parentElement;
+            let raw_data = template.getAttribute('listdata');
+            if (raw_data === null) return;
+            let split_data = raw_data.split('#@51248');
+            for (let data_entry of split_data) {
+                let parsed = JSON.parse(data_entry);
+                if (parsed === undefined) continue;
+                tmpl_vts_emotes_list_input_addItem(
+                    template.firstElementChild.firstElementChild,
+                    parsed["emotion_name"],
+                    parsed["talking_hotkey_sequence"],
+                    parsed["idle_hotkey_sequence"],
+                    parsed["reset_hotkey_sequence"]
+                );
+            }
+        }
+    </script>
+    <template id="tmpl-vts-emotes-list-input">
+        <div class="biglist-wrapper" onload="tmpl_vts_emotes_list_input_set(this)">
+            <div class="biglist"></div>
+            <div class="biglist-add-button" onclick="tmpl_vts_emotes_list_input_addItem(this)">+</div>
+        </div>
+    </template>
+
+    <script>
+        /** @param {HTMLElement} element @param {string[]} keywords */
+        function tmpl_contextual_memories_list_input_addItem(element, keywords=[], content="") {
+            let new_entry = document.createElement('div');
+            new_entry.classList.add('biglist-entry');
+            let head_line = document.createElement('div');
+            head_line.classList.add('biglist-entry-line');
+            let head_p = document.createElement('p');
+            head_p.textContent = "";
+            let remove_btn = document.createElement('div');
+            remove_btn.textContent = "–";
+            remove_btn.classList.add('list-remove-button');
+            let keywords_line = document.createElement('div');
+            keywords_line.classList.add('biglist-entry-line');
+            let keywords_p = document.createElement('p');
+            keywords_p.textContent = "Keywords";
+            let keywords_list = document.createElement('tmpl-list-input');
+            keywords_list.setAttribute('list', keywords.join(','));
+            let content_line = document.createElement('div');
+            content_line.classList.add('biglist-entry-line');
+            content_line.style.flexDirection = 'column';
+            let content_p = document.createElement('p');
+            content_p.textContent = "Content";
+            let content_input = document.createElement('div');
+            content_input.setAttribute('contenteditable', 'true');
+            content_input.textContent = content;
+            head_line.appendChild(head_p);
+            head_line.appendChild(remove_btn);
+            keywords_line.appendChild(keywords_p);
+            keywords_line.appendChild(keywords_list);
+            content_line.appendChild(content_p);
+            content_line.appendChild(content_input);
+            new_entry.appendChild(head_line);
+            new_entry.appendChild(keywords_line);
+            new_entry.appendChild(content_line);
+            element.parentElement.firstElementChild.appendChild(new_entry);
+            initializeTemplates();
+            remove_btn.onclick = () => {
+                new_entry.parentElement.removeChild(new_entry);
+            };
+        }
+        /** @param {HTMLElement} element */
+        function tmpl_contextual_memories_list_input_set(element) {
+            let template = element.parentElement;
+            let raw_data = template.getAttribute('listdata');
+            if (raw_data === null) return;
+            let split_data = raw_data.split('#@51248');
+            for (let data_entry of split_data) {
+                let parsed = JSON.parse(data_entry);
+                if (parsed === undefined) continue;
+                tmpl_contextual_memories_list_input_addItem(
+                    template.firstElementChild.firstElementChild,
+                    parsed["keywords"],
+                    parsed["content"],
+                );
+            }
+        }
+    </script>
+    <template id="tmpl-contextual-memories-list-input">
+        <div class="biglist-wrapper" onload="tmpl_contextual_memories_list_input_set(this)">
+            <div class="biglist"></div>
+            <div class="biglist-add-button" onclick="tmpl_contextual_memories_list_input_addItem(this)">+</div>
+        </div>
+    </template>
+
+    <script src="js/ui.js"></script>
+</body>
+</html>

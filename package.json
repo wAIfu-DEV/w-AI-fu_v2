@@ -1,0 +1,22 @@
+{
+  "name": "w-ai-fu",
+  "version": "2.0.0",
+  "description": "AI Vtuber program.",
+  "main": "source/app/entry/index.js",
+  "scripts": {
+    "start": "electron --trace-warnings .",
+    "build": "npx tsc",
+    "build+run": "npx tsc && node source/app/entry/index.js"
+  },
+  "author": "wAIfu_DEV",
+  "license": "GPL-3.0-or-later",
+  "devDependencies": {
+    "@types/ws": "^8.5.5",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "electron": "^25.5.0",
+    "openai": "^4.0.0",
+    "ws": "^8.13.0"
+  }
+}
