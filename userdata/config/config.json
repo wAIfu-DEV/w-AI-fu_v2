@@ -1,0 +1,337 @@
+{
+    "_": {
+        "user_name": {
+            "hint": "Name the character should refer you as.",
+            "reload": false,
+            "type": "string",
+            "default": "USER",
+            "value": "USER"
+        },
+        "character_name": {
+            "hint": "Name of the character to load.",
+            "reload": false,
+            "type": "string",
+            "default": "Hilda",
+            "value": "Hilda"
+        },
+        "context": {
+            "hint": "Additional persistant context to send to the text generation model. This will have a great impact on the output.",
+            "reload": false,
+            "type": "string",
+            "default": "",
+            "value": ""
+        },
+        "paused": {
+            "hint": "Keeps track of if the program should be paused or not.",
+            "reload": false,
+            "type": "boolean",
+            "default": false,
+            "value": false
+        },
+        "vts_session_token": {
+            "hint": "VTS auth session token.",
+            "reload": false,
+            "type": "string",
+            "default": "",
+            "value": ""
+        }
+    },
+    "behaviour": {
+        "voice_input": {
+            "hint": "Allows input via the microphone using the chosen Speech-To-Text provider.",
+            "reload": true,
+            "type": "boolean",
+            "default": false,
+            "value": false
+        },
+        "push_to_talk": {
+            "hint": "Press Right Ctrl to record audio from the microphone, release to end recording. Requires 'Voice Input' to be on.",
+            "reload": true,
+            "type": "boolean",
+            "default": false,
+            "value": false
+        },
+        "read_live_chat": {
+            "hint": "Makes the character respond to live chat messages.",
+            "reload": true,
+            "type": "boolean",
+            "default": false,
+            "value": false
+        },
+        "read_chat_after_x_seconds": {
+            "hint": "Time in seconds to wait for before reading the next chat message.",
+            "reload": false,
+            "type": "number",
+            "default": 0,
+            "min": 0.05,
+            "max": 999,
+            "value": 0.05
+        },
+        "chat_reading_mode": {
+            "hint": "[Latest-Buffered]: Reads the latest chat message, if none is found reads next (older) message in a buffer of 4 messages. If buffer is empty, tries to monologue.\r\n[Latest]: Reads the latest chat message, if none is found tries to monolgue.\r\n[All]: Reads every chat message without exception.",
+            "reload": false,
+            "type": "select",
+            "options": [
+                "latest-buffered",
+                "latest",
+                "all"
+            ],
+            "default": "latest-buffered",
+            "value": "latest-buffered"
+        },
+        "always_read_highlighted": {
+            "hint": "Highlighted messages will not be skipped and will be prioritized over other chat messages. (Might only work on Twitch)",
+            "reload": false,
+            "type": "boolean",
+            "default": true,
+            "value": true
+        },
+        "monologue": {
+            "hint": "Make the character talk about subjects of interest if no new chat messages have been found.",
+            "reload": false,
+            "type": "boolean",
+            "default": false,
+            "value": false
+        },
+        "monologue_chance_percent": {
+            "hint": "Modify the probability of triggering a monologue when no other input sources are available.",
+            "reload": false,
+            "type": "number",
+            "default": 100,
+            "min": 0,
+            "max": 100,
+            "value": 100
+        },
+        "additional_logs": {
+            "hint": "Displays debug-related logs in the console.",
+            "reload": false,
+            "type": "boolean",
+            "default": false,
+            "value": false
+        },
+        "log_to_file": {
+            "hint": "Write console contents to a file in the logs folder.",
+            "reload": false,
+            "type": "boolean",
+            "default": true,
+            "value": true
+        }
+    },
+    "memory": {
+        "max_short_term_memory_entries": {
+            "hint": "Number of interactions to keep in memory. A greater number might disolve the character's personality and lead to repetition and incoherent speech.",
+            "reload": false,
+            "type": "number",
+            "default": 10,
+            "min": 1,
+            "max": 20,
+            "value": 10
+        },
+        "contextual_memories": {
+            "hint": "Memories to be remembered based on context (i.e if encounters keyword)",
+            "reload": false,
+            "type": "contextual_memory_list",
+            "default": [],
+            "value": [
+                {
+                    "keywords": [
+                        "w-ai-fu",
+                        "w_ai_fu",
+                        "ai vtuber",
+                        "dev",
+                        "program",
+                        "code",
+                        "language"
+                    ],
+                    "content": "w-AI-fu (or ai waifu) is an open-source program written in the languagesh TypeScript and Python used to create and run customized AI Vtubers. It was created by w-AI-fu_DEV (aka DEV). It is the program currently running."
+                }
+            ]
+        }
+    },
+    "moderation": {
+        "filter_bad_words": {
+            "hint": "Checks the content of the character's speech for bad words.",
+            "reload": true,
+            "type": "boolean",
+            "default": true,
+            "value": true
+        },
+        "blacklisted_chatters": {
+            "hint": "Lowercase usernames of chatters the character should not respond to. Usually used for bots. Or for people you don't really like.",
+            "reload": false,
+            "type": "list",
+            "default": [],
+            "value": [
+                "streamlabs",
+                "streamelements",
+                "nightbot"
+            ]
+        }
+    },
+    "providers": {
+        "livestream_platform": {
+            "hint": "What platform from which to receive messages and events.",
+            "reload": true,
+            "type": "select",
+            "options": [
+                "twitch"
+            ],
+            "default": "twitch",
+            "value": "twitch"
+        },
+        "llm_provider": {
+            "hint": "Text generation AI provider.",
+            "reload": true,
+            "type": "select",
+            "options": [
+                "novelai",
+                "openai"
+            ],
+            "default": "novelai",
+            "value": "novelai"
+        },
+        "tts_provider": {
+            "hint": "Text-To-Speech AI provider.",
+            "reload": true,
+            "type": "select",
+            "options": [
+                "novelai"
+            ],
+            "default": "novelai",
+            "value": "novelai"
+        },
+        "stt_provider": {
+            "hint": "Speech-To-Text AI provider.",
+            "reload": true,
+            "type": "select",
+            "options": [
+                "openai",
+                "google"
+            ],
+            "default": "google",
+            "value": "google"
+        }
+    },
+    "devices": {
+        "voice_input_device": {
+            "hint": "Audio device from which to receive input, usually a microphone.",
+            "reload": false,
+            "type": "select",
+            "options": [],
+            "default": "",
+            "value": ""
+        },
+        "tts_output_device": {
+            "hint": "Audio device on which to play the TTS for the character.",
+            "reload": false,
+            "type": "select",
+            "options": [],
+            "default": "",
+            "value": ""
+        },
+        "narrator_tts_output_device": {
+            "hint": "Audio device on which to play the TTS for the narrator.",
+            "reload": false,
+            "type": "select",
+            "options": [],
+            "default": "",
+            "value": ""
+        },
+        "alt_output_device": {
+            "hint": "Audio device on which to play audio unrelated to TTS. Used for the instrumental track of songs.",
+            "reload": false,
+            "type": "select",
+            "options": [],
+            "default": "",
+            "value": ""
+        }
+    },
+    "llm": {
+        "temperature": {
+            "hint": "",
+            "reload": false,
+            "type": "number",
+            "default": 1.35,
+            "min": 0,
+            "max": 2,
+            "value": 1.35
+        },
+        "repetition_penalty": {
+            "hint": "",
+            "reload": false,
+            "type": "number",
+            "default": 2.8,
+            "min": 0,
+            "max": 2,
+            "value": 2.8
+        },
+        "length_penalty": {
+            "hint": "",
+            "reload": false,
+            "type": "number",
+            "default": -0.35,
+            "min": -1,
+            "max": 1,
+            "value": -0.35
+        },
+        "max_output_length": {
+            "hint": "",
+            "reload": false,
+            "type": "number",
+            "default": 80,
+            "min": 0,
+            "max": 200,
+            "value": 50
+        }
+    },
+    "tts": {
+        "volume_modifier_db": {
+            "hint": "Modifies the volume of the TTS. Unit is dB.",
+            "reload": false,
+            "type": "number",
+            "default": 10,
+            "min": -100,
+            "max": 50,
+            "value": 10
+        },
+        "use_narrator_to_read_chat": {
+            "hint": "Use another voice when reading a message coming from live chat.",
+            "reload": false,
+            "type": "boolean",
+            "default": true,
+            "value": true
+        },
+        "narrator_voice": {
+            "hint": "Voice seed of the TTS for the narrator.",
+            "reload": false,
+            "type": "string",
+            "default": "dev",
+            "value": "dev"
+        }
+    },
+    "vts": {
+        "api_port": {
+            "hint": "Port of the VTS instance's plugin API.",
+            "reload": true,
+            "type": "number",
+            "default": 8001,
+            "min": 0,
+            "max": 65535,
+            "value": 8001
+        },
+        "full_reset_hotkey_sequence": {
+            "hint": "Hotkey sequence to call once connecting to VTS. Usually used to reset the animations and toggles.",
+            "reload": false,
+            "type": "list",
+            "default": [],
+            "value": []
+        },
+        "emotions": {
+            "hint": "Hotkey sequences to play for each emotions. Emotions are infered using the LLM for each answers. Make sure the name of the emotion is related to a feeling the character will express in its response.",
+            "reload": false,
+            "type": "vts_emotions_list",
+            "default": [],
+            "value": []
+        }
+    }
+}
