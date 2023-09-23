@@ -1,1 +1,3 @@
-cscript install/run_hide_console.vbs
+@ECHO OFF
+npx electron .
+PAUSE
