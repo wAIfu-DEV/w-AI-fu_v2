@@ -17,7 +17,7 @@ export class InputSystemText implements InputSystem {
     async initialize(): Promise<void> {
         this.#cli_input_interface.removeAllListeners();
         this.#cli_input_interface.on('line', (input) => {
-            wAIfu.state.command_queue.pushBack(input);
+            wAIfu.state!.command_queue.pushBack(input);
         });
         return;
     }
@@ -42,7 +42,7 @@ export class InputSystemText implements InputSystem {
                 resolve(new Result(false,new Message(),REJECT_REASON.TIMEOUT));
                 return;
             },
-            wAIfu.state.config.behaviour.read_chat_after_x_seconds.value * 1000);
+            wAIfu.state!.config.behaviour.read_chat_after_x_seconds.value * 1000);
 
             const check_queue = () => {
                 if (this.#interrupt_next === true) {
@@ -51,10 +51,10 @@ export class InputSystemText implements InputSystem {
                     return;
                 };
                 if (resolved === true) return;
-                if (wAIfu.state.command_queue.notEmpty()) {
+                if (wAIfu.state!.command_queue.notEmpty()) {
                     let message: Message = {
-                        "sender": wAIfu.state.config._.user_name.value,
-                        "content": wAIfu.state.command_queue.consume(),
+                        "sender": wAIfu.state!.config._.user_name.value,
+                        "content": wAIfu.state!.command_queue.consume(),
                         "trusted": true
                     }
                     resolve(new Result(true,message,REJECT_REASON.NONE));

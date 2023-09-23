@@ -5,9 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MSG_ERR_TYPE = exports.MESSAGE_TYPE = exports.VtubeStudioAPI = void 0;
 const ws_1 = __importDefault(require("ws"));
-const io_1 = require("../io/io");
 const Waifu_1 = require("../types/Waifu");
 const export_config_1 = require("../config/export_config");
+const io_1 = require("../io/io");
 class VtubeStudioAPI {
     #PORT = `ws://0.0.0.0:${Waifu_1.wAIfu.state.config.vts.api_port.value.toString()}`;
     #websocket = new ws_1.default(null);
@@ -45,8 +45,9 @@ class VtubeStudioAPI {
                     {
                         this.#authToken = message["data"]["authenticationToken"];
                         Waifu_1.wAIfu.state.config._.vts_session_token.value = this.#authToken;
-                        (0, export_config_1.writeConfig)(Waifu_1.wAIfu.state.config);
+                        (0, export_config_1.writeConfig)(Waifu_1.wAIfu.state.config, Waifu_1.wAIfu.state.current_preset);
                         Waifu_1.wAIfu.dependencies?.ui?.send('CONFIG', Waifu_1.wAIfu.state.config);
+                        Waifu_1.wAIfu.dependencies?.ui?.send('DEVICES', Waifu_1.wAIfu.state.devices);
                         this.#authenticateSession();
                     }
                     break;
@@ -232,7 +233,7 @@ class VtubeStudioAPI {
             }));
         }
     }
-    close() {
+    free() {
         if (this.#websocket.readyState !== ws_1.default.CLOSED)
             this.#websocket.close();
     }

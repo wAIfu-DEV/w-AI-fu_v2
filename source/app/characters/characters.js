@@ -53,8 +53,8 @@ function retreiveCharacters() {
     return result;
 }
 exports.retreiveCharacters = retreiveCharacters;
-function writeCharacter(char) {
+function writeCharacter(file_name, char) {
     let CHARA_PATH = process.cwd() + '/userdata/characters/';
-    fs.writeFileSync(CHARA_PATH + char.char_name + '.json', JSON.stringify(char));
+    fs.writeFileSync(CHARA_PATH + file_name + '.json', JSON.stringify(char));
 }
 exports.writeCharacter = writeCharacter;

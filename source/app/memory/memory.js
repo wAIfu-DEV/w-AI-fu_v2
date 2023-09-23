@@ -2,14 +2,17 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Memory = void 0;
 const Waifu_1 = require("../types/Waifu");
+const anti_contamination_1 = require("./anti_contamination");
 class Memory {
     #memories = [];
     getLongTerm() {
         let char = Waifu_1.wAIfu.state.characters[Waifu_1.wAIfu.state.config._.character_name.value];
-        return `{${char["char_persona"]}}\n${char["example_dialogue"]}`;
+        return `----\n${char["char_persona"]}\n***\n[ Style: chat${(Waifu_1.wAIfu.state?.config.moderation.sfw_generation_hint.value === true) ? ', SFW' : ''} ]\n${char["example_dialogue"]}`;
     }
     getShortTerm() {
-        return this.#memories.join('');
+        return (Waifu_1.wAIfu.state?.config.memory.memory_decontamination.value === true)
+            ? (0, anti_contamination_1.decontaminateMemory)(this.#memories).join('')
+            : this.#memories.join('');
     }
     getMemories(context = null, prompt = null) {
         let result = '';
@@ -26,7 +29,7 @@ class Memory {
                     continue;
                 if (contextual_memory === null)
                     contextual_memory = '';
-                contextual_memory += `{${mem_entry.content}}\n`;
+                contextual_memory += `----\n${mem_entry.content}\n`;
                 continue next_memory;
             }
         }
@@ -42,7 +45,7 @@ class Memory {
         if (short !== '\n')
             result += short;
         if (context !== null)
-            result += `{${context}}\n`;
+            result += `{ ${context} }\n`;
         if (prompt !== null)
             result += prompt;
         return result;

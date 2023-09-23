@@ -1,5 +1,3 @@
-import { logToFile } from "../logging/log_to_file";
-import { wAIfu } from "../types/Waifu";
 import { UserInterface } from "../ui_com/userinterface";
 
 /**
@@ -8,7 +6,8 @@ import { UserInterface } from "../ui_com/userinterface";
 export class IO {
 
     static ui_ref: UserInterface|undefined = undefined;
-    static buffer: {text: string, color: string}[] = [];
+    static buffer: {text: string, color: string, debug: boolean}[] = [];
+    static log_buffer: {text: string, time: number}[] = [];
 
     /**
      * Similar to `console.log()` with support for UI.
@@ -23,13 +22,11 @@ export class IO {
         });
         let result = args_stringified.join(' ');
         process.stdout.write(result + '\r\n');
-        if (this.ui_ref)
+        if (this.ui_ref && this.ui_ref.closed === false)
             this.ui_ref.send('CONSOLE_MESSAGE', { text: result, color: "lightgrey" });
         else
-            this.buffer.push({ text: result, color: "lightgrey" });
-        if (wAIfu.state.config.behaviour.log_to_file.value === true) {
-            logToFile(result);
-        }
+            this.buffer.push({ text: result, color: "lightgrey", debug: false });
+        this.log_buffer.push({ text: result, time: new Date().getTime() });
     }
 
     /**
@@ -45,15 +42,11 @@ export class IO {
         });
         let result = args_stringified.join(' ');
         process.stdout.write(result + '\r\n');
-        if (wAIfu.state.config.behaviour.additional_logs.value === true) {
-            if (this.ui_ref)
-                this.ui_ref.send('CONSOLE_MESSAGE', { text: result, color: "grey" });
-            else
-                this.buffer.push({ text: result, color: "grey" });
-        }
-        if (wAIfu.state.config.behaviour.log_to_file.value === true) {
-            logToFile(result);
-        }
+        if (this.ui_ref && this.ui_ref.closed === false)
+            this.ui_ref.send('CONSOLE_DEBUG', { text: result, color: "grey" });
+        else
+            this.buffer.push({ text: result, color: "grey", debug: true });
+        this.log_buffer.push({ text: result, time: new Date().getTime() });
     }
 
     /**
@@ -69,9 +62,7 @@ export class IO {
         });
         let result = args_stringified.join(' ');
         process.stdout.write(result + '\r\n');
-        if (wAIfu.state.config.behaviour.log_to_file.value === true) {
-            logToFile(result);
-        }
+        this.log_buffer.push({ text: result, time: new Date().getTime() });
     }
 
     /**
@@ -87,13 +78,11 @@ export class IO {
         });
         let result = args_stringified.join(' ');
         process.stdout.write('\x1b[1;33m' + result + '\x1b[0m' + '\r\n');
-        if (this.ui_ref)
+        if (this.ui_ref && this.ui_ref.closed === false)
             this.ui_ref.send('CONSOLE_MESSAGE', { text: result, color: "orange" });
         else
-            this.buffer.push({ text: result, color: "orange" });
-        if (wAIfu.state.config.behaviour.log_to_file.value === true) {
-            logToFile(result);
-        }
+            this.buffer.push({ text: result, color: "orange", debug: false });
+        this.log_buffer.push({ text: result, time: new Date().getTime() });
     }
 
     /**
@@ -109,13 +98,11 @@ export class IO {
         });
         let result = args_stringified.join(' ');
         process.stdout.write('\x1b[0;31m' + result + '\x1b[0m' + '\r\n');
-        if (this.ui_ref)
+        if (this.ui_ref && this.ui_ref.closed === false)
             this.ui_ref.send('CONSOLE_MESSAGE', { text: result, color: "red" });
         else
-            this.buffer.push({ text: result, color: "red" });
-        if (wAIfu.state.config.behaviour.log_to_file.value === true) {
-            logToFile(result);
-        }
+            this.buffer.push({ text: result, color: "red", debug: false });
+        this.log_buffer.push({ text: result, time: new Date().getTime() });
     }
 
     /**
@@ -125,7 +112,9 @@ export class IO {
     static bindToUI(ui: UserInterface) {
         this.ui_ref = ui;
         // Send data in buffer to UI
-        while (this.buffer.length !== 0)
-            this.ui_ref.send('CONSOLE_MESSAGE', this.buffer.shift());
+        while (this.buffer.length !== 0) {
+            let entry = this.buffer.shift();
+            this.ui_ref.send((entry?.debug) ? 'CONSOLE_DEBUG' : 'CONSOLE_MESSAGE', { text: entry?.text, color: entry?.color });
+        }
     }
 }

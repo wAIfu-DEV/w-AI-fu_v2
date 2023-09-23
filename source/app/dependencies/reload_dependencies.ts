@@ -1,5 +1,5 @@
-import { IO } from "../io/io";
 import { Config } from "../config/config";
+import { IO } from "../io/io";
 import { Dependencies } from "./dependencies";
 import { freeDependencies } from "./dependency_freeing";
 import { loadDependencies } from "./dependency_loader";

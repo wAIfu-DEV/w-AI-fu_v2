@@ -13,5 +13,5 @@ export function getDevices(): any {
 }
 
 export function getDeviceIndex(device_name: string): number {
-    return wAIfu.state.devices[device_name] || 0;
+    return wAIfu.state!.devices[device_name] || 0;
 }

@@ -17,6 +17,8 @@ from novelai_api.Preset import Model, Preset
 from novelai_api.Tokenizer import Tokenizer
 from novelai_api.utils import b64_to_tokens
 
+os.system('title w-AI-fu NovelAI LLM')
+
 bad_words: BanList = BanList(':', ' :', '::', ' ::', '*:', ';', ' ;', ';;', ' ;;', '#', ' #', '|', ' |', '{', ' {', '}', ' }', '[', ' [', ']', ' ]', '\\', ' \\', '/', ' /', '*', ' *', '~', ' ~', 'bye', ' bye', 'Bye', ' Bye', 'goodbye', ' goodbye', 'Goodbye', ' Goodbye', 'goodbye', ' goodnight', 'Goodnight', ' Goodnight', 'www', ' www', 'http', ' http', 'https', ' https', '.com', '.org', '.net')
 
 async def handle(message: str, websocket):

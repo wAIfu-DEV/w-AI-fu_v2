@@ -1,6 +1,9 @@
 import pyaudio
 import json
 import sys
+import os
+
+os.system('title w-AI-fu audio devices fetcher')
 
 def send_devices():
     p = pyaudio.PyAudio()

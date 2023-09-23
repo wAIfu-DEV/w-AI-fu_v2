@@ -13,14 +13,16 @@ export class PluginFile {
         "command-handling": "",
         "response-handling": "",
         "main-loop-end": "",
-        "quit": ""
+        "quit": "",
+        "interrupt": ""
     };
+    "activated": boolean = false;
 }
 
 export class Plugin {
     definition: PluginFile = new PluginFile();
     code: any = {};
-    #callEvent(name: "load"|"main-loop-start"|"input-source"|"command-handling"|"response-handling"|"main-loop-end"|"quit", args: any[]): any {
+    #callEvent(name: "load"|"main-loop-start"|"input-source"|"command-handling"|"response-handling"|"main-loop-end"|"quit"|"interrupt", args: any[]): any {
         if (this.definition.subscribes[name] === undefined) return;
         if (this.definition.subscribes[name] === "") return;
         let hook = this.definition.subscribes[name];
@@ -91,5 +93,13 @@ export class Plugin {
     onResponseHandling(response: string): string|undefined {
         let ret = this.#callEvent("response-handling", [response]);
         return (typeof ret === "string") ? ret : undefined;
+    }
+    /**
+     * Called when user presses the interrupt button.
+     * Calls the function subscribed to the "interrupt" event.
+     * No arguments passed, expects no return value.
+     */
+    onInterrupt(): void {
+        this.#callEvent("interrupt", []);
     }
 }

@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 import { importFromFile_impl } from './import_config';
+import { getAllPresets_impl } from './available_presets';
+import { getPreset_impl } from './get_last_preset';
 //import { readParseAs } from '../file_system/file_system';
 
 export class Config {
@@ -19,15 +21,23 @@ export class Config {
         "always_read_highlighted": new ConfigFieldBoolean(),
         "monologue": new ConfigFieldBoolean(),
         "monologue_chance_percent": new ConfigFieldNumber(),
+        "try_prevent_freakouts": new ConfigFieldBoolean(),
         "additional_logs": new ConfigFieldBoolean(),
         "log_to_file": new ConfigFieldBoolean()
     };
     "memory" = {
         "max_short_term_memory_entries": new ConfigFieldNumber(),
+        "memory_decontamination": new ConfigFieldBoolean(),
+        "decontamination_percentage": new ConfigFieldNumber(),
         "contextual_memories": new ConfigFieldContextualMemoryList()
     }
     "moderation" = {
         "filter_bad_words": new ConfigFieldBoolean(),
+        "censor_placeholder": new ConfigFieldString(),
+        "retry_after_filtered": new ConfigFieldBoolean(),
+        "sfw_generation_hint": new ConfigFieldBoolean(),
+        "filter_spam_messages": new ConfigFieldBoolean(),
+        "remove_non_ascii_from_chat": new ConfigFieldBoolean(),
         "blacklisted_chatters": new ConfigFieldList()
     };
     "providers" = {
@@ -65,10 +75,9 @@ export class Config {
         fs.writeFileSync(process.cwd() + '/userdata/config/config.json', serialized);
     }
 
-    static importFromFile = importFromFile_impl
-
-    static CONFIG_PATH = process.cwd() + "/userdata/config/config.json";
-    static CONFIG_BACKUP_PATH = process.cwd() + "/userdata/config/config.backup.json";
+    static importFromFile = importFromFile_impl;
+    static getAllPresets = getAllPresets_impl;
+    static getPreset = getPreset_impl;
 }
 
 export interface ConfigField {

@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { IO } from '../io/io';
 
 const LOGS_PATH = `${process.cwd()}/logs/`;
 const ts = process.getCreationTime() || 0;
@@ -13,19 +14,26 @@ let log_path =
     }_${
         Math.floor(ts).toString()}.txt`;
 
-export function logToFile(text: string): void {
-    let new_date = new Date();
-    let time_str = `${
-        new_date.getHours().toString().padStart(2, '0')
-    }:${
-        new_date.getMinutes().toString().padStart(2, '0')
-    }:${
-        new_date.getSeconds().toString().padStart(2, '0')
-    }`;
-    let data = `[${time_str}] ${text}\r\n`;
-    if (fs.existsSync(log_path) === false) {
-        fs.writeFileSync(log_path, data, { encoding: "utf8" });
-    } else {
-        fs.appendFileSync(log_path, data, { encoding: "utf8" });
+export function logToFile(): void {
+
+    for (let log of IO.log_buffer) {
+        let new_date = new Date(log.time);
+        let time_str = `${
+            new_date.getHours().toString().padStart(2, '0')
+        }:${
+            new_date.getMinutes().toString().padStart(2, '0')
+        }:${
+            new_date.getSeconds().toString().padStart(2, '0')
+        }`;
+        let data = `[${time_str}] ${log.text}\r\n`;
+
+        if (fs.existsSync(LOGS_PATH) === false)
+            fs.mkdirSync(LOGS_PATH);
+
+        if (fs.existsSync(log_path) === false) {
+            fs.writeFileSync(log_path, data, { encoding: "utf8" });
+        } else {
+            fs.appendFileSync(log_path, data, { encoding: "utf8" });
+        }
     }
 }

@@ -12,7 +12,7 @@ export class Dependencies {
     tts: TextToSpeech;
     live_chat: LiveChat;
     ui: UserInterface|undefined = undefined;
-    vts: VtubeStudioAPI|undefined = undefined;
+    vts: VtubeStudioAPI;
 
     needs_reload: boolean = false;
 
@@ -21,7 +21,7 @@ export class Dependencies {
                 _tts: TextToSpeech,
                 _live_chat: LiveChat,
                 _ui: UserInterface|undefined = undefined,
-                _vts: VtubeStudioAPI|undefined = undefined)
+                _vts: VtubeStudioAPI)
     {
         this.input_system = _in;
         this.llm = _llm;

@@ -1,17 +1,37 @@
 import { UserInterface } from "../ui_com/userinterface";
 import { wAIfu } from "../types/Waifu";
-import { app } from "electron";
-import { IO } from "../io/io";
+import { BrowserWindow, app } from "electron";
 import { loadDependencies } from "../dependencies/dependency_loader";
 import { getDevices } from "../devices/devices";
-import { VtubeStudioAPI } from "../vtube_studio/vtube_studio";
 import { setClosedCaptions } from "../closed_captions/closed_captions";
 import { loadPlugins } from "../plugins/load_plugins";
+import { IO } from "../io/io";
+import { AppState } from "../state/state";
+import { logToFile } from "../logging/log_to_file";
+import { freeDependencies } from "../dependencies/dependency_freeing";
+import { freePlugins } from "../plugins/free_plugins";
+import { checkUpdates } from "../update/should_update";
+
+/**
+ * @deprecated THIS FUNCTION IS ALREADY BEING CALLED AT PROCESS EXIT,
+ *             DO NOT CALL DURING PROCESS EXECUTION.
+ */
+export async function exit(): Promise<void> {
+    for (let plugin of wAIfu.plugins)
+        plugin.onQuit();
+    freePlugins(wAIfu.plugins);
+    await freeDependencies(wAIfu.dependencies!);
+    wAIfu.dependencies?.ui?.free();
+    setClosedCaptions('');
+    logToFile();
+}
 
 /**
  * Entry point of the program.
 */
-async function main(): Promise<void> {
+export async function main(): Promise<void> {
+
+    console.log(process.cwd());
 
     process.on('uncaughtException', (e) => {
         IO.error('w-AI-fu encountered an unhandled exception.');
@@ -24,36 +44,58 @@ async function main(): Promise<void> {
         IO.error(e.stack);
     });
 
-    process.on('exit', () => {
-        for (let plugin of wAIfu.plugins)
-            plugin.onQuit();
-        setClosedCaptions('');
+    app.on('quit', () => {
+        exit();
     });
 
-    process.title = 'w-AI-fu';
-    IO.print('w-AI-fu', wAIfu.getVersion());
+    /*
+    // MIGHT BE LEAKING MEMORY SINCE
+    // ELECTRON USES app.quit() instead of process.exit()
+    process.on('exit', () => {
+        try {
+            exit();
+        } catch {
+            process.abort();
+        }
+    });*/
 
-    wAIfu.state.devices = getDevices();
-    wAIfu.dependencies = await loadDependencies(wAIfu.state.config);
+    process.title = 'w-AI-fu';
+    wAIfu.version = wAIfu.getVersion();
+    IO.print('w-AI-fu', wAIfu.version);
+
+    wAIfu.state = new AppState();
+    wAIfu.state!.devices = getDevices();
+    wAIfu.dependencies = await loadDependencies(wAIfu.state!.config);
 
     wAIfu.dependencies.ui = new UserInterface();
-    wAIfu.dependencies.vts = new VtubeStudioAPI();
 
     wAIfu.plugins = loadPlugins();
 
     // Required by Electron before displaying the window.
     // This is unavoidable dead time so better use it to load our own deps.
     await app.whenReady();
-    wAIfu.dependencies.ui.createWindow({
+    app.name = "w-AI-fu";
+    const win = new BrowserWindow({
         title: 'w-AI-fu',
-        html_path: process.cwd() + '/source/ui/index.html',
-        icon_path: process.cwd() + '/source/ui/icon.ico'
+        width: 900,
+        height: 900,
+        icon: process.cwd() + '/source/ui/icon.ico',
+        autoHideMenuBar: true
+    });
+    win.loadFile(process.cwd() + '/source/ui/index.html');
+    win.on('close', () => {
+        IO.print('Exited after UI closing.')
+        app.quit();
     });
     
     await wAIfu.dependencies.ui.initialize();
     IO.bindToUI(wAIfu.dependencies.ui);
 
+    checkUpdates();
+
     while(true)
         await wAIfu.mainLoop();
 }
-main();
+setTimeout(main, 0); // <-- should prevent circular dependency issues.
+                     // Makes it so main is called only after having full
+                     // initialization of the program.

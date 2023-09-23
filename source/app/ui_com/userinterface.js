@@ -26,12 +26,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserInterface = void 0;
 const ws_1 = __importStar(require("ws"));
 const ui_ws_handling_1 = require("./ui_ws_handling");
-const electron_1 = require("electron");
-const io_1 = require("../io/io");
 const Waifu_1 = require("../types/Waifu");
+const io_1 = require("../io/io");
 class UserInterface {
     #websocket_server;
     #websocket = new ws_1.default(null);
+    closed = false;
     constructor() {
         this.#websocket_server = new ws_1.WebSocketServer({ host: '127.0.0.1', port: 8459 });
     }
@@ -44,13 +44,20 @@ class UserInterface {
                     const data_str = data.toString('utf-8');
                     this.handleUImessage(this, data_str);
                 });
+                this.#websocket.on('close', () => {
+                    this.closed = true;
+                });
                 this.#sendConfig();
                 this.#sendAuth();
                 this.#sendCharacters();
                 this.#sendDevices();
+                this.#sendPresets();
                 resolve();
             });
         });
+    }
+    #sendPresets() {
+        this.send('PRESETS', { presets: Waifu_1.wAIfu.state.presets, current: Waifu_1.wAIfu.state?.current_preset });
     }
     #sendConfig() {
         this.send('CONFIG', Waifu_1.wAIfu.state.config);
@@ -64,21 +71,15 @@ class UserInterface {
     #sendDevices() {
         this.send('DEVICES', Waifu_1.wAIfu.state.devices);
     }
-    createWindow(options) {
-        const win = new electron_1.BrowserWindow({
-            title: options.title,
-            width: 900,
-            height: 900,
-            icon: options.icon_path,
-            autoHideMenuBar: true,
-        });
-        win.loadFile(options.html_path);
-    }
     send(prefix, payload) {
-        if (this.#websocket.readyState === ws_1.default.OPEN)
+        if (this.#websocket.readyState === ws_1.default.OPEN && this.closed === false)
             this.#websocket.send(prefix + ' ' + JSON.stringify(payload));
         else
-            io_1.IO.warn('ERROR: Tried sending message to UI, but websocket is not open.');
+            io_1.IO.warn(`ERROR: Tried sending message ${prefix} to UI, but websocket is not open.`);
+    }
+    free() {
+        this.#websocket.close();
+        this.#websocket_server.close();
     }
     handleUImessage = ui_ws_handling_1.handleUImessage_impl;
 }

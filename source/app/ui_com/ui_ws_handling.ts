@@ -1,14 +1,16 @@
-import { IO } from "../io/io";
 import { Auth } from "../auth/auth";
 import { checkNeedsReload } from "../config/check_need_reload";
 import { Config } from "../config/config";
 import { writeAuth } from "../auth/export_auth";
 import { writeConfig } from "../config/export_config";
-import { isOfClass, isOfClassDeep } from "../types/Helper";
+import { isOfClassDeep } from "../types/Helper";
 import { wAIfu } from "../types/Waifu";
 import { UserInterface } from "./userinterface";
 import { Character } from "../characters/character";
 import { retreiveCharacters, writeCharacter } from "../characters/characters";
+import { IO } from "../io/io";
+import { startUpdate } from "../update/start_update";
+import { writePreset } from "../config/write_preset";
 
 export function handleUImessage_impl(ui: UserInterface ,message: string) {
 
@@ -35,28 +37,34 @@ export function handleUImessage_impl(ui: UserInterface ,message: string) {
 
     switch(prefix) {
         case PREFIX_TYPE.MESSAGE: {
-            wAIfu.state.command_queue.pushBack((json_object as any)["text"]);
+            wAIfu.state!.command_queue.pushBack((json_object as any)["text"]);
         } break;
         case PREFIX_TYPE.CHARACTER: {
-            let match = isOfClass(json_object, new Character(), { print: true, obj_name: "character" });
+            class CharWrapper {
+                file: string = "";
+                character: Character = new Character();
+            }
+            let match = isOfClassDeep(json_object, new CharWrapper(), { print: true, obj_name: "char_wrapper", add_missing_fields: true });
             if (match === false) {
                 IO.warn('ERROR: Character received from UI did not pass the sanity check. Latest character changes might be lost.');
                 return;
             }
-            writeCharacter(json_object as Character);
-            wAIfu.state.characters = retreiveCharacters();
-            ui.send('CHARACTERS', wAIfu.state.characters);
+            let char_wrapper = json_object as CharWrapper;
+            writeCharacter(char_wrapper.file, char_wrapper.character);
+            wAIfu.state!.characters = retreiveCharacters();
+            ui.send('CHARACTERS', wAIfu.state!.characters);
         } break;
         case PREFIX_TYPE.CONFIG: {
-            let match = isOfClassDeep(json_object, new Config(), { print: true, obj_name: "config" });
+            let match = isOfClassDeep(json_object, new Config(), { print: true, obj_name: "config", add_missing_fields: true });
             if (match === false) {
                 IO.warn('ERROR: Config received from UI did not pass the sanity check. Latest config changes might be lost.');
-                ui.send('CONFIG', wAIfu.state.config);
+                ui.send('CONFIG', wAIfu.state!.config);
+                ui.send('DEVICES', wAIfu.state!.devices);
                 return;
             }
-            let reload = checkNeedsReload(wAIfu.state.config, json_object as Config);
-            writeConfig(json_object as Config);
-            wAIfu.state.config = Config.importFromFile(0);
+            let reload = checkNeedsReload(wAIfu.state!.config, json_object as Config);
+            writeConfig(json_object as Config, wAIfu.state?.current_preset);
+            wAIfu.state!.config = Config.importFromFile(wAIfu.state?.current_preset);
             IO.print('Updated config.');
             if (reload === true) {
                 wAIfu.dependencies!.needs_reload = true;
@@ -64,14 +72,14 @@ export function handleUImessage_impl(ui: UserInterface ,message: string) {
             }
         } break;
         case PREFIX_TYPE.AUTH: {
-            let match = isOfClassDeep(json_object, new Auth(), { print: true, obj_name: "auth" });
+            let match = isOfClassDeep(json_object, new Auth(), { print: true, obj_name: "auth", add_missing_fields: true });
             if (match === false) {
                 IO.warn('ERROR: Accounts infos received from UI did not pass the sanity check. Latest changes might be lost.');
-                ui.send('AUTH', wAIfu.state.auth);
+                ui.send('AUTH', wAIfu.state!.auth);
                 return;
             }
-            wAIfu.state.auth = json_object as Auth;
-            writeAuth(wAIfu.state.auth);
+            wAIfu.state!.auth = json_object as Auth;
+            writeAuth(wAIfu.state!.auth);
             IO.print('Updated auth.');
         } break;
         case PREFIX_TYPE.INTERRUPT: {
@@ -79,8 +87,28 @@ export function handleUImessage_impl(ui: UserInterface ,message: string) {
             IO.print('Interrupted speech.');
         } break;
         case PREFIX_TYPE.RESET: {
-            wAIfu.state.memory.clear();
+            wAIfu.state!.memory.clear();
             IO.print('Cleared memories.');
+        } break;
+        case PREFIX_TYPE.UPDATE: {
+            startUpdate();
+        } break;
+        case PREFIX_TYPE.PRESET: {
+            if (wAIfu.state === undefined) return;
+            wAIfu.state.current_preset = (json_object as { preset: string }).preset;
+            writePreset(wAIfu.state.current_preset);
+            wAIfu.state.config = Config.importFromFile(wAIfu.state.current_preset);
+            ui.send('CONFIG', wAIfu.state!.config);
+            ui.send('DEVICES', wAIfu.state!.devices);
+        } break;
+        case PREFIX_TYPE.NEW_PRESET: {
+            if (wAIfu.state === undefined) return;
+            let new_preset_name = (json_object as { name: string }).name + '.json';
+            writeConfig(wAIfu.state.config, new_preset_name);
+            wAIfu.state.current_preset = new_preset_name;
+            writePreset(wAIfu.state.current_preset);
+            wAIfu.state.presets.push(wAIfu.state.current_preset);
+            ui.send("PRESETS", { presets: wAIfu.state.presets, current: wAIfu.state.current_preset });
         } break;
         default:
             IO.warn('ERROR: Received unhandled prefix from UI WebSocket.');
@@ -95,4 +123,7 @@ enum PREFIX_TYPE {
     AUTH = "AUTH",
     INTERRUPT = "INTERRUPT",
     RESET = "RESET",
+    UPDATE = "UPDATE",
+    PRESET = "PRESET",
+    NEW_PRESET = "NEW_PRESET"
 }

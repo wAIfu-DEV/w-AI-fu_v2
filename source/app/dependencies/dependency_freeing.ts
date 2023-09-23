@@ -5,6 +5,7 @@ export async function freeDependencies(dependencies: Dependencies): Promise<void
         dependencies.input_system.free(),
         dependencies.live_chat.free(),
         dependencies.llm.free(),
-        dependencies.tts.free()
+        dependencies.tts.free(),
+        dependencies.vts.free()
     ]);
 }

@@ -7,6 +7,7 @@ import { Result } from '../types/Result';
 import { Message } from '../types/Message';
 import { getDeviceIndex } from '../devices/devices';
 import { IO } from '../io/io';
+
 import WebSocket, { WebSocketServer } from 'ws';
 
 export class InputSystemVoice implements InputSystem {
@@ -21,16 +22,16 @@ export class InputSystemVoice implements InputSystem {
         this.#cli_input_interface = readline.createInterface(process.stdin, process.stdout);
         this.#interrupt_next = false;
 
-        let use_ptt = (wAIfu.state.config.behaviour.push_to_talk.value == true) ? '1' : '0';
-        let device = getDeviceIndex(wAIfu.state.config.devices.voice_input_device.value).toString();
+        let use_ptt = (wAIfu.state!.config.behaviour.push_to_talk.value == true) ? '1' : '0';
+        let device = getDeviceIndex(wAIfu.state!.config.devices.voice_input_device.value).toString();
 
         //this.#child_process = cproc.spawn('cmd.exe', ['/C', 'python speech.py ' + use_ptt + ' ' + device], {
         this.#child_process = cproc.spawn('python', [
             'speech.py',
             use_ptt,
             device,
-            wAIfu.state.config.providers.stt_provider.value,
-            wAIfu.state.auth.openai.token
+            wAIfu.state!.config.providers.stt_provider.value,
+            wAIfu.state!.auth.openai.token
         ], {
             cwd: `${process.cwd()}/source/app/speech_to_text/`,
             detached: false, shell: false
@@ -48,7 +49,7 @@ export class InputSystemVoice implements InputSystem {
     async initialize(): Promise<void> {
         this.#cli_input_interface.removeAllListeners();
         this.#cli_input_interface.on('line', (input) => {
-            wAIfu.state.command_queue.pushBack(input);
+            wAIfu.state!.command_queue.pushBack(input);
         });
         
         return new Promise((resolve) => {
@@ -57,7 +58,7 @@ export class InputSystemVoice implements InputSystem {
                 this.#websocket.on('error', (err: Error) => IO.print(err));
 
                 this.#websocket.on('message', (data: WebSocket.RawData) => {
-                    wAIfu.state.command_queue.pushFront(data.toString('utf8'));
+                    wAIfu.state!.command_queue.pushFront(data.toString('utf8'));
                 });
 
                 this.#websocket.send('');
@@ -107,7 +108,7 @@ export class InputSystemVoice implements InputSystem {
                 resolve(new Result(false,new Message(),REJECT_REASON.TIMEOUT));
                 return;
             },
-            wAIfu.state.config.behaviour.read_chat_after_x_seconds.value * 1000);
+            wAIfu.state!.config.behaviour.read_chat_after_x_seconds.value * 1000);
 
             const check_queue = () => {
                 if (this.#interrupt_next === true) {
@@ -116,10 +117,10 @@ export class InputSystemVoice implements InputSystem {
                     return;
                 };
                 if (resolved === true) return;
-                if (wAIfu.state.command_queue.notEmpty()) {
+                if (wAIfu.state!.command_queue.notEmpty()) {
                     let message: Message = {
-                        "sender": wAIfu.state.config._.user_name.value,
-                        "content": wAIfu.state.command_queue.consume(),
+                        "sender": wAIfu.state!.config._.user_name.value,
+                        "content": wAIfu.state!.command_queue.consume(),
                         "trusted": true
                     }
                     resolve(new Result(true,message,REJECT_REASON.NONE));

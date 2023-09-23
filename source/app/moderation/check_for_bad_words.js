@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkForBadWords = void 0;
-const io_1 = require("../io/io");
 const Waifu_1 = require("../types/Waifu");
+const io_1 = require("../io/io");
 function checkForBadWords(text) {
     if (Waifu_1.wAIfu.state.config.moderation.filter_bad_words.value === false)
         return null;
@@ -14,7 +14,7 @@ function checkForBadWords(text) {
         }
     }
     if (matched_words.length > 0) {
-        io_1.IO.print('Filter matched "' + matched_words.join('","') + '" in\r\n"' + text.trim() + '"');
+        io_1.IO.print('Bad words filter matched "' + matched_words.join('","') + '" in\r\n"' + text.trim() + '"');
         return matched_words;
     }
     else

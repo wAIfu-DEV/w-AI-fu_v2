@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LargeLanguageModelOpenAI = void 0;
-const io_1 = require("../io/io");
 const Result_1 = require("../types/Result");
 const Waifu_1 = require("../types/Waifu");
 const llm_interface_1 = require("./llm_interface");
 const openai_1 = require("openai");
+const io_1 = require("../io/io");
 class LargeLanguageModelOpenAI {
     #openai_api;
     constructor() {
@@ -54,30 +54,38 @@ class LargeLanguageModelOpenAI {
     }
     #parsePrompt(unparsed_prompt) {
         const character = Waifu_1.wAIfu.state.characters[Waifu_1.wAIfu.state.config._.character_name.value];
-        const lines = String(unparsed_prompt).split(/\r\n|\n/g, undefined);
         let msg_array = [];
-        const lines_nb = lines.length;
-        for (let i = 0; i < lines_nb; ++i) {
-            const line = lines[i].trim();
-            if (line.startsWith('{', 0)) {
+        let matches = unparsed_prompt.matchAll(/(^----[^]*?\*\*\*)|({ [^] })|(.*?)(?:\n|$)/g);
+        for (let match of matches) {
+            let content = match[0].trim();
+            if (content === null)
+                continue;
+            if (content === '')
+                continue;
+            if (content.startsWith('----') === true) {
                 msg_array.push({
                     "role": 'system',
-                    "content": line.slice(1, line.length - 1),
+                    "content": content.replaceAll(/----|\*\*\*/g, '')
                 });
                 continue;
             }
-            if (line.includes(':')) {
-                let split_line = line.split(':');
+            if (content.startsWith('{ ') === true) {
+                msg_array.push({
+                    "role": 'system',
+                    "content": content.replaceAll(/{ | }/g, '')
+                });
+                continue;
+            }
+            if (content.includes(':') === true) {
+                let split_line = content.split(':');
                 msg_array.push({
                     "role": (split_line[0] === character.char_name) ? 'assistant' : 'user',
-                    "content": line,
+                    "content": content
                 });
                 continue;
             }
-            else {
-                io_1.IO.warn('Could not parse line ' + String(i) + ' of prompt because of missing \':\'.\nThe format of the prompt should follow this schema for each line:\nNAME: MESSAGE');
-                return null;
-            }
+            io_1.IO.warn('Could not parse line "' + content + '"');
+            return null;
         }
         msg_array.pop();
         return msg_array;

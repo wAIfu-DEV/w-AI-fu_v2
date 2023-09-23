@@ -15,7 +15,9 @@ class Auth {
     };
     "twitch" = {
         "channel_name": "",
-        "oauth_token": ""
+        "oauth_token": "",
+        "twitchapp_clientid": "",
+        "twitchapp_secret": ""
     };
     static AUTH_PATH = process.cwd() + "/userdata/auth/auth.json";
     static importFromFile = import_auth_1.importAuthFromFile_impl;

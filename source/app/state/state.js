@@ -9,6 +9,8 @@ const config_1 = require("../config/config");
 const decode_bad_words_1 = require("../moderation/decode_bad_words");
 class AppState {
     command_queue;
+    presets;
+    current_preset;
     config;
     auth;
     characters;
@@ -17,7 +19,9 @@ class AppState {
     bad_words;
     constructor() {
         this.command_queue = new queue_1.CommandQueue();
-        this.config = config_1.Config.importFromFile();
+        this.presets = config_1.Config.getAllPresets();
+        this.current_preset = config_1.Config.getPreset(this.presets);
+        this.config = config_1.Config.importFromFile(this.current_preset);
         this.auth = auth_1.Auth.importFromFile();
         this.characters = (0, characters_1.retreiveCharacters)();
         this.memory = new memory_1.Memory();

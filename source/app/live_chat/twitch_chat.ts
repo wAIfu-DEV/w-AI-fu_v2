@@ -2,27 +2,31 @@ import WebSocket from "ws";
 import { Message } from "../types/Message";
 import { LiveChat } from "./live_chat_interface";
 import { wAIfu } from "../types/Waifu";
-import { IO } from "../io/io";
 import { Result } from "../types/Result";
+import { TwitchEventSubs } from "../twitch/twitch_eventsub";
+import { IO } from "../io/io";
 
 export class LiveChatTwitch implements LiveChat {
 
     #websocket: WebSocket;
+    #enventsub: TwitchEventSubs;
+
     #buffer: {message: Message, metadata: string}[] = [];
     #prioritized_buffer: {message: Message, metadata: string}[] = [];
 
     constructor() {
         this.#websocket = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+        this.#enventsub = new TwitchEventSubs();
     }
 
     initialize(): Promise<void> {
-        let promise = new Promise<void>((resolve) => {
+        return new Promise<void>((resolve) => {
             let resolved = false;
             this.#websocket.on('open', () => {
                 this.#websocket.send('CAP REQ :twitch.tv/commands twitch.tv/membership twitch.tv/tags');
-                this.#websocket.send(`PASS oauth:${wAIfu.state.auth.twitch.oauth_token}`);
-                this.#websocket.send(`NICK ${wAIfu.state.auth.twitch.channel_name.toLowerCase()}`);
-                this.#websocket.send(`JOIN #${wAIfu.state.auth.twitch.channel_name.toLowerCase()}`);
+                this.#websocket.send(`PASS oauth:${wAIfu.state!.auth.twitch.oauth_token}`);
+                this.#websocket.send(`NICK ${wAIfu.state!.auth.twitch.channel_name.toLowerCase()}`);
+                this.#websocket.send(`JOIN #${wAIfu.state!.auth.twitch.channel_name.toLowerCase()}`);
             });
             this.#websocket.on('error', (data: WebSocket.RawData) => {
                 let data_str = data.toString('utf8');
@@ -31,6 +35,7 @@ export class LiveChatTwitch implements LiveChat {
             this.#websocket.on('message', (data: WebSocket.RawData) => {
                 if (resolved === false) {
                     resolved = true;
+                    this.#enventsub.connectTwitchEventSub();
                     resolve();
                 }
                 let data_str = data.toString('utf8');
@@ -47,7 +52,6 @@ export class LiveChatTwitch implements LiveChat {
                 }
             });
         });
-        return promise;
     }
     
     free(): Promise<void> {
@@ -58,12 +62,13 @@ export class LiveChatTwitch implements LiveChat {
                 this.#websocket.close();
             }
             this.#websocket.removeAllListeners();
+            this.#enventsub.free();
             resolve();
         });
     }
 
     nextMessage(): Result<Message,null> {
-        switch (wAIfu.state.config.behaviour.chat_reading_mode.value) {
+        switch (wAIfu.state!.config.behaviour.chat_reading_mode.value) {
             case "latest":
                 return this.#policyLatest();
             case "all":
@@ -84,7 +89,7 @@ export class LiveChatTwitch implements LiveChat {
                 if (this.#buffer.length === 0)
                     return new Result(false, new Message(), null);
                 content = this.#buffer.pop();
-                // Limit buffer size to ~5 so that old messages get cleaned
+                // Limit buffer size to 4 so that old messages get cleaned
                 while (this.#buffer.length > 4)
                     this.#buffer.shift();
             }
@@ -136,7 +141,7 @@ export class LiveChatTwitch implements LiveChat {
 
         let is_highlighted = /msg-id=highlighted-message;/g.test(metadata);
         if (is_highlighted === true
-        && wAIfu.state.config.behaviour.always_read_highlighted.value === true)
+        && wAIfu.state!.config.behaviour.always_read_highlighted.value === true)
             prioritized = true;
 
         // Fetch displayed user name from metadata
@@ -145,7 +150,7 @@ export class LiveChatTwitch implements LiveChat {
             user = reg_name_result[1]!;
 
         // If is in blacklist, skip
-        if (wAIfu.state.config.moderation.blacklisted_chatters.value.indexOf(user.toLowerCase()) !== -1)
+        if (wAIfu.state!.config.moderation.blacklisted_chatters.value.indexOf(user.toLowerCase()) !== -1)
             return null
         
         if (prioritized === false && is_highlighted === false) {
@@ -158,11 +163,9 @@ export class LiveChatTwitch implements LiveChat {
             if (starts_with_comma) return null;
         }
 
-        // Basic sanitization
-        // Not really required since the UI makes use of .textContent and
-        // never directly includes HTML, but I am not a security expert so
-        // better be safe than sorry.
-        content = content.replaceAll(/[^a-zA-Z0-9 \.\,\?\!\+\-\%\*\=\/\_\:\;\$\€\@\<\>\(\)]/g, '');
+        // Basic sanitization to prevent bypass of bad words filter
+        if (wAIfu.state?.config.moderation.remove_non_ascii_from_chat.value === true)
+            content = content.replaceAll(/[^a-zA-Z0-9 \.\,\?\!\+\-\%\*\=\/\_\:\;\$\€\@\<\>\(\)]/g, '');
 
         return {
             msg: {

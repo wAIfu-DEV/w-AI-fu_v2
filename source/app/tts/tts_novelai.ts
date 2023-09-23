@@ -21,8 +21,8 @@ export class TextToSpeechNovelAI implements TextToSpeech {
         this.#child_process = cproc.spawn('python', [ 'novel_tts.py' ], { 
             cwd: process.cwd() + '/source/app/novelai_api/',
             env: {
-                NAI_USERNAME: wAIfu.state.auth["novelai"]["mail"],
-                NAI_PASSWORD: wAIfu.state.auth["novelai"]["password"],
+                NAI_USERNAME: wAIfu.state!.auth["novelai"]["mail"],
+                NAI_PASSWORD: wAIfu.state!.auth["novelai"]["password"],
                 CWD: process.cwd()
             },
             detached: false, shell: false

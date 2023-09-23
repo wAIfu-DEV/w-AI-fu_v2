@@ -25,11 +25,19 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.writeConfig = void 0;
 const fs = __importStar(require("fs"));
-const config_1 = require("./config");
 const io_1 = require("../io/io");
-function writeConfig(config) {
+const Waifu_1 = require("../types/Waifu");
+function writeConfig(config, file_name) {
+    let file = file_name;
+    if (file === null || file === undefined) {
+        if (Waifu_1.wAIfu.state === undefined)
+            return;
+        Waifu_1.wAIfu.state.current_preset = 'config.json';
+        file = 'config.json';
+        Waifu_1.wAIfu.dependencies?.ui?.send("PRESETS", { presets: Waifu_1.wAIfu.state.presets, current: Waifu_1.wAIfu.state.current_preset });
+    }
     try {
-        fs.writeFileSync(config_1.Config.CONFIG_PATH, JSON.stringify(config));
+        fs.writeFileSync(process.cwd() + "/userdata/config/" + file, JSON.stringify(config));
     }
     catch {
         io_1.IO.warn('ERROR: Failed to write config to file.');

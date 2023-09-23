@@ -1,6 +1,6 @@
 import * as fs from 'fs'
-import { IO } from '../io/io';
 import { Character } from './character';
+import { IO } from '../io/io';
 
 /**
  * @returns a list of characters from the folder `userdata/characters`
@@ -36,7 +36,7 @@ export function retreiveCharacters(): any {
     return result;
 }
 
-export function writeCharacter(char: Character) {
+export function writeCharacter(file_name: string, char: Character) {
     let CHARA_PATH = process.cwd() + '/userdata/characters/';
-    fs.writeFileSync(CHARA_PATH + char.char_name + '.json', JSON.stringify(char));
+    fs.writeFileSync(CHARA_PATH + file_name + '.json', JSON.stringify(char));
 }

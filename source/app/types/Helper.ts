@@ -1,10 +1,10 @@
-import { IO } from "../io/io";
 import { Result } from "./Result";
+import { IO } from "../io/io";
 
 /**
  * Helper function to check if object x contains the same fields as object y
  */
-export function isOfClass(x: unknown, y: unknown, options = { print: false, obj_name: "x" }): boolean {
+export function isOfClass(x: unknown, y: unknown, options = { print: false, obj_name: "x", add_missing_fields: false }): boolean {
     if (x === undefined || x === null) {
         if (x === y) return true;
         if (options.print === true)
@@ -19,8 +19,14 @@ export function isOfClass(x: unknown, y: unknown, options = { print: false, obj_
     }
     for(let key of Object.keys(y as any)) {
         if (key in x === false) {
-            if (options.print === true)
+            if (options.print === true) {
                 IO.warn('WARNING:', options.obj_name, 'failed the type check.');
+                if (options.add_missing_fields === true) {
+                    IO.warn('WARNING: creating new field', key, 'in', options.obj_name);
+                    (x as any)[key] = (y as any)[key];
+                    return true;
+                }
+            }
             return false;
         }
     }
@@ -30,7 +36,7 @@ export function isOfClass(x: unknown, y: unknown, options = { print: false, obj_
 /**
  * Recursive version of isOfClass
  */
-export function isOfClassDeep(x: unknown, y: unknown, options = { print: false, obj_name: "x" }): boolean {
+export function isOfClassDeep(x: unknown, y: unknown, options = { print: false, obj_name: "x", add_missing_fields: false }): boolean {
     if (x === undefined || x === null) {
         if (x === y) return true;
         if (options.print === true)
@@ -45,11 +51,17 @@ export function isOfClassDeep(x: unknown, y: unknown, options = { print: false, 
     }
     for(let key of Object.keys(y as any)) {
         if (key in x === false) {
-            if (options.print === true)
+            if (options.print === true) {
                 IO.warn('WARNING:', options.obj_name, 'failed the type check.');
+                if (options.add_missing_fields === true) {
+                    IO.warn('WARNING: creating new field', key, 'in', options.obj_name);
+                    (x as any)[key] = (y as any)[key];
+                    return true;
+                }
+            }
             return false;
         }
-        if (isOfClassDeep((x as any)[key],(y as any)[key], { print: options.print, obj_name: options.obj_name + '.' + key }) === false) {
+        if (isOfClassDeep((x as any)[key],(y as any)[key], { print: options.print, obj_name: options.obj_name + '.' + key, add_missing_fields: options.add_missing_fields }) === false) {
             if (options.print === true)
                 IO.warn('WARNING:', options.obj_name, 'failed the type check.');
             return false;

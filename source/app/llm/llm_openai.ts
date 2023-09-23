@@ -1,9 +1,9 @@
 import { Character } from "../characters/character";
-import { IO } from "../io/io";
 import { Result } from "../types/Result";
 import { wAIfu } from "../types/Waifu";
 import { LLM_GEN_ERRORS, LargeLanguageModel, LlmGenerationSettings } from "./llm_interface";
 import { OpenAI } from "openai";
+import { IO } from "../io/io";
 
 export class LargeLanguageModelOpenAI implements LargeLanguageModel {
 
@@ -11,7 +11,7 @@ export class LargeLanguageModelOpenAI implements LargeLanguageModel {
 
     constructor() {
         this.#openai_api = new OpenAI({
-            apiKey: wAIfu.state.auth.openai.token,
+            apiKey: wAIfu.state!.auth.openai.token,
         });
     }
 
@@ -63,34 +63,41 @@ export class LargeLanguageModelOpenAI implements LargeLanguageModel {
     }
 
     #parsePrompt(unparsed_prompt: string): {role:"function"|"system"|"user"|"assistant",content:string}[]|null {
-        const character: Character = wAIfu.state.characters[wAIfu.state.config._.character_name.value] as Character;
-        const lines = String(unparsed_prompt).split(/\r\n|\n/g, undefined);
+        const character: Character = wAIfu.state!.characters[wAIfu.state!.config._.character_name.value] as Character;
+        //const lines = String(unparsed_prompt).split(/\r\n|\n/g, undefined);
     
-        let msg_array = [];
-        const lines_nb = lines.length;
-    
-        for (let i = 0; i < lines_nb; ++i) {
-            const line = lines[i]!.trim();
-    
-            if (line.startsWith('{', 0)) {
+        let msg_array: any[] = [];
+
+        let matches = unparsed_prompt.matchAll(/(^----[^]*?\*\*\*)|({ [^] })|(.*?)(?:\n|$)/g);
+
+        for (let match of matches) {
+            let content = match[0].trim();
+            if (content === null) continue;
+            if (content === '') continue;
+            if (content.startsWith('----') === true) {
                 msg_array.push({
                     "role": 'system' as const,
-                    "content": line.slice(1, line.length - 1),
+                    "content": content.replaceAll(/----|\*\*\*/g, '')
                 });
                 continue;
             }
-            if (line.includes(':')) {
-                let split_line = line.split(':');
+            if (content.startsWith('{ ') === true) {
+                msg_array.push({
+                    "role": 'system' as const,
+                    "content": content.replaceAll(/{ | }/g, '')
+                });
+                continue;
+            }
+            if (content.includes(':') === true) {
+                let split_line = content.split(':');
                 msg_array.push({
                     "role": (split_line[0] === character.char_name) ? 'assistant' as const : 'user' as const,
-                    "content": line,
+                    "content": content
                 });
                 continue;
-            } else {
-                IO.warn(
-                    'Could not parse line ' + String(i) + ' of prompt because of missing \':\'.\nThe format of the prompt should follow this schema for each line:\nNAME: MESSAGE');
-                return null;
             }
+            IO.warn('Could not parse line "' + content + '"');
+            return null;
         }
         msg_array.pop() // removes added `NAME:` at end of file for support with all llms, not needed here
         return msg_array;

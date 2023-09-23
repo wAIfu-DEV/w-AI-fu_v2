@@ -2,6 +2,7 @@ import * as fs from 'fs'
 
 import {
     Config,
+    /*
     ConfigField, 
     ConfigFieldString,
     ConfigFieldBoolean,
@@ -10,14 +11,17 @@ import {
     ConfigFieldSelect,
     ConfigFieldVtsEmotionList,
     ConfigFieldContextualMemoryList
-}
+*/}
 from "./config";
 import { IO } from '../io/io';
+import { isOfClassDeep } from '../types/Helper';
 
+/*
 function regenConfigFromBackup() {
     fs.writeFileSync(Config.CONFIG_PATH,
         fs.readFileSync(Config.CONFIG_BACKUP_PATH, {encoding: 'utf8'}));
 }
+
 
 export function importFromFile_impl(tries: number = 0): Config {
 
@@ -26,7 +30,7 @@ export function importFromFile_impl(tries: number = 0): Config {
             'Ran out of tries when attempting to read config.',
             'Please reinstall the application and move the contents of the "userdata" folder',
             'to the new install, without including the "config" folder inside.');
-        process.exit(1);
+        app.quit();
         return new Config();
     }
 
@@ -119,5 +123,37 @@ export function importFromFile_impl(tries: number = 0): Config {
         }
     }
     // Welp glad I'm done with that shit.
+    return json_obj as Config;
+}*/
+
+export function importFromFile_impl(preset: string|null|undefined) {
+
+    if (preset === null || preset === undefined) return new Config();
+
+    const CONFIG_PATH = process.cwd() + "/userdata/config/";
+
+    let raw_data;
+    try {
+        raw_data = fs.readFileSync(CONFIG_PATH + preset, { encoding: "utf8" });
+    } catch {
+        IO.warn("ERROR: Could not load preset:", preset);
+        return new Config();
+    }
+
+    let json_obj: unknown;
+    try {
+        json_obj = JSON.parse(raw_data);
+    } catch {
+        IO.warn("ERROR: Could not parse preset:", preset);
+        return new Config();
+    }
+
+    if (isOfClassDeep(json_obj, new Config(), {
+        add_missing_fields: true, obj_name: "config", print: true }) === false) {
+
+        IO.warn("ERROR: Preset file", preset, " did not pass sanity test.");
+        return new Config();
+    }
+
     return json_obj as Config;
 }

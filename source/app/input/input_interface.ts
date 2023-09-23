@@ -5,7 +5,7 @@ export interface InputSystem {
     awaitInput(): Promise<Result<Message,REJECT_REASON>>;
     initialize(): Promise<void>;
     interrupt(): void;
-    free(): Promise<void>
+    free(): Promise<void>;
 }
 
 export enum REJECT_REASON {

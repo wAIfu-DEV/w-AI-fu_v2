@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.loadDependencies = void 0;
 const input_text_1 = require("../input/input_text");
-const io_1 = require("../io/io");
 const twitch_chat_1 = require("../live_chat/twitch_chat");
 const llm_novelai_1 = require("../llm/llm_novelai");
 const llm_openai_1 = require("../llm/llm_openai");
@@ -12,6 +11,8 @@ const input_voice_1 = require("../input/input_voice");
 const live_chat_none_1 = require("../live_chat/live_chat_none");
 const llm_characterai_1 = require("../llm/llm_characterai");
 const Waifu_1 = require("../types/Waifu");
+const io_1 = require("../io/io");
+const vtube_studio_1 = require("../vtube_studio/vtube_studio");
 async function loadDependencies(config) {
     let input_sys;
     if (config.behaviour.voice_input.value) {
@@ -78,6 +79,7 @@ async function loadDependencies(config) {
                 break;
         }
     }
+    let vts = new vtube_studio_1.VtubeStudioAPI();
     await Promise.allSettled([
         input_sys.initialize(),
         llm.initialize(),
@@ -85,6 +87,6 @@ async function loadDependencies(config) {
         live_chat.initialize(),
     ]);
     io_1.IO.debug(`LLM: ${llm_provider}, TTS: ${tts_provider}, STT: ${Waifu_1.wAIfu.state.config.providers.stt_provider.value}, LIVE: ${live_chat_provider}`);
-    return new dependencies_1.Dependencies(input_sys, llm, tts, live_chat);
+    return new dependencies_1.Dependencies(input_sys, llm, tts, live_chat, undefined, vts);
 }
 exports.loadDependencies = loadDependencies;

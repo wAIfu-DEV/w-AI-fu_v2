@@ -3,11 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.wAIfu = exports.WaifuApp = void 0;
 const version_1 = require("../version/version");
 const main_loop_1 = require("../main_loop/main_loop");
-const state_1 = require("../state/state");
 class WaifuApp {
+    version = '';
     getVersion = version_1.getVersion_impl;
     mainLoop = main_loop_1.mainLoop_impl;
-    state = new state_1.AppState();
+    state = undefined;
     dependencies = undefined;
     plugins = [];
 }

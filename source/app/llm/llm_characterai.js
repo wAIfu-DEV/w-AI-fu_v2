@@ -27,8 +27,8 @@ exports.LargeLanguageModelCharacterAI = void 0;
 const cproc = __importStar(require("child_process"));
 const Result_1 = require("../types/Result");
 const llm_interface_1 = require("./llm_interface");
-const io_1 = require("../io/io");
 const Waifu_1 = require("../types/Waifu");
+const io_1 = require("../io/io");
 class LargeLanguageModelCharacterAI {
     #child_process;
     constructor() {

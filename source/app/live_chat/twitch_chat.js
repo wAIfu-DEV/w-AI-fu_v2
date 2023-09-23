@@ -7,17 +7,20 @@ exports.LiveChatTwitch = void 0;
 const ws_1 = __importDefault(require("ws"));
 const Message_1 = require("../types/Message");
 const Waifu_1 = require("../types/Waifu");
-const io_1 = require("../io/io");
 const Result_1 = require("../types/Result");
+const twitch_eventsub_1 = require("../twitch/twitch_eventsub");
+const io_1 = require("../io/io");
 class LiveChatTwitch {
     #websocket;
+    #enventsub;
     #buffer = [];
     #prioritized_buffer = [];
     constructor() {
         this.#websocket = new ws_1.default('wss://irc-ws.chat.twitch.tv:443');
+        this.#enventsub = new twitch_eventsub_1.TwitchEventSubs();
     }
     initialize() {
-        let promise = new Promise((resolve) => {
+        return new Promise((resolve) => {
             let resolved = false;
             this.#websocket.on('open', () => {
                 this.#websocket.send('CAP REQ :twitch.tv/commands twitch.tv/membership twitch.tv/tags');
@@ -32,6 +35,7 @@ class LiveChatTwitch {
             this.#websocket.on('message', (data) => {
                 if (resolved === false) {
                     resolved = true;
+                    this.#enventsub.connectTwitchEventSub();
                     resolve();
                 }
                 let data_str = data.toString('utf8');
@@ -50,7 +54,6 @@ class LiveChatTwitch {
                 }
             });
         });
-        return promise;
     }
     free() {
         return new Promise((resolve) => {
@@ -59,6 +62,7 @@ class LiveChatTwitch {
                 this.#websocket.close();
             }
             this.#websocket.removeAllListeners();
+            this.#enventsub.free();
             resolve();
         });
     }

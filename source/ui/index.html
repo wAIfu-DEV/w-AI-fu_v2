@@ -14,7 +14,7 @@
             <img src="icon.ico" alt="logo">
             <div id="header-text">
                 <h1>w-AI-fu</h1>
-                <p>2.0.0</p>
+                <p id="version-string">2.0.0</p>
             </div>
         </div>
         <spacer></spacer>
@@ -56,6 +56,14 @@
 
     <section id="page-parameters" class="page" style="display: none;">
         <div id="parameters-wrapper">
+            <div id="parameters-presets">
+                <div>Preset</div>
+                <tmpl-select-input id="preset-select" options="" default=""></tmpl-select-input>
+                <spacer></spacer>
+                <div>New Preset</div>
+                <tmpl-string-input id="new-preset-name-input" value="" default=""></tmpl-string-input>
+                <div id="new-preset-button" class="list-add-button">+</div>
+            </div>
             <div id="parameters-header"></div>
             <div id="parameters"></div>
             <div id="parameters-footer">
@@ -72,19 +80,19 @@
                 </span>
                 <span>
                     <p>Character Name</p>
-                    <div id="character-edit-name" style="white-space: pre-line;" contenteditable="true"></div>
+                    <div id="character-edit-name" style="white-space: pre-line; display: inline;" contenteditable="true"></div>
                 </span>
                 <span>
                     <p>Character Description</p>
-                    <div id="character-edit-desc" style="white-space: pre-line;" contenteditable="true"></div>
+                    <div id="character-edit-desc" style="white-space: pre-line; display: inline;" contenteditable="true"></div>
                 </span>
                 <span>
                     <p>Context Dialogue</p>
-                    <div id="character-edit-dialogue" style="white-space: pre-line;" contenteditable="true"></div>
+                    <div id="character-edit-dialogue" style="white-space: pre-line; display: inline;" contenteditable="true"></div>
                 </span>
                 <span>
                     <p>Voice</p>
-                    <div id="character-edit-voice" style="white-space: pre-line;" contenteditable="true"></div>
+                    <div id="character-edit-voice" style="white-space: pre-line; display: inline;" contenteditable="true"></div>
                 </span>
             </div>
             <div id="characters-footer">
@@ -100,6 +108,30 @@
             </div>
         </div>
     </section>
+
+    <script>
+        function closeUpdateDialog() {
+            /** @type {HTMLDialogElement} */ // @ts-ignore
+            let d = document.getElementById("dialog-update");
+            d.close();
+        }
+    </script>
+    <dialog id="dialog-update">
+        <div id="dialog-update-box">
+            <p>Version <a id="update-version-string" target="_blank">2.0.0</a> of w-AI-fu is available, update now ?</p>
+            <div class="dialog-buttons">
+                <div 
+                    class="button important"
+                    onclick="BackEnd.send('UPDATE', {})"
+                    >Update</div>
+                <div
+                    class="button"
+                    onclick="closeUpdateDialog()"
+                    >Cancel</div>
+            </div>
+        </div>
+    </dialog>
+
     <footer></footer>
 
     <script>

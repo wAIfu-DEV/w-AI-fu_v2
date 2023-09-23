@@ -26,8 +26,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.importAuthFromFile_impl = void 0;
 const fs = __importStar(require("fs"));
 const auth_1 = require("./auth");
-const io_1 = require("../io/io");
 const Helper_1 = require("../types/Helper");
+const io_1 = require("../io/io");
 function importAuthFromFile_impl() {
     let raw_data;
     try {
@@ -45,7 +45,7 @@ function importAuthFromFile_impl() {
         io_1.IO.warn('ERROR: Could not parse auth.json file.');
         return new auth_1.Auth();
     }
-    if ((0, Helper_1.isOfClassDeep)(json_obj, new auth_1.Auth(), { print: true, obj_name: "auth" }) === false) {
+    if ((0, Helper_1.isOfClassDeep)(json_obj, new auth_1.Auth(), { print: true, obj_name: "auth", add_missing_fields: true }) === false) {
         io_1.IO.warn('ERROR: Auth object failed to pass the sanity check.');
         return new auth_1.Auth();
     }

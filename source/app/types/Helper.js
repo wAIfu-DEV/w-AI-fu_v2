@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addMissingFields = exports.addMissingFields_ERRORS = exports.isOfClassDeep = exports.isOfClass = void 0;
-const io_1 = require("../io/io");
 const Result_1 = require("./Result");
-function isOfClass(x, y, options = { print: false, obj_name: "x" }) {
+const io_1 = require("../io/io");
+function isOfClass(x, y, options = { print: false, obj_name: "x", add_missing_fields: false }) {
     if (x === undefined || x === null) {
         if (x === y)
             return true;
@@ -20,15 +20,21 @@ function isOfClass(x, y, options = { print: false, obj_name: "x" }) {
     }
     for (let key of Object.keys(y)) {
         if (key in x === false) {
-            if (options.print === true)
+            if (options.print === true) {
                 io_1.IO.warn('WARNING:', options.obj_name, 'failed the type check.');
+                if (options.add_missing_fields === true) {
+                    io_1.IO.warn('WARNING: creating new field', key, 'in', options.obj_name);
+                    x[key] = y[key];
+                    return true;
+                }
+            }
             return false;
         }
     }
     return true;
 }
 exports.isOfClass = isOfClass;
-function isOfClassDeep(x, y, options = { print: false, obj_name: "x" }) {
+function isOfClassDeep(x, y, options = { print: false, obj_name: "x", add_missing_fields: false }) {
     if (x === undefined || x === null) {
         if (x === y)
             return true;
@@ -45,11 +51,17 @@ function isOfClassDeep(x, y, options = { print: false, obj_name: "x" }) {
     }
     for (let key of Object.keys(y)) {
         if (key in x === false) {
-            if (options.print === true)
+            if (options.print === true) {
                 io_1.IO.warn('WARNING:', options.obj_name, 'failed the type check.');
+                if (options.add_missing_fields === true) {
+                    io_1.IO.warn('WARNING: creating new field', key, 'in', options.obj_name);
+                    x[key] = y[key];
+                    return true;
+                }
+            }
             return false;
         }
-        if (isOfClassDeep(x[key], y[key], { print: options.print, obj_name: options.obj_name + '.' + key }) === false) {
+        if (isOfClassDeep(x[key], y[key], { print: options.print, obj_name: options.obj_name + '.' + key, add_missing_fields: options.add_missing_fields }) === false) {
             if (options.print === true)
                 io_1.IO.warn('WARNING:', options.obj_name, 'failed the type check.');
             return false;

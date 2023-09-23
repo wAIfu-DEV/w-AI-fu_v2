@@ -2,8 +2,8 @@ import * as cproc from 'child_process';
 
 import { Result } from "../types/Result";
 import { LLM_GEN_ERRORS, LargeLanguageModel, LlmGenerationSettings } from "./llm_interface";
-import { IO } from '../io/io';
 import { wAIfu } from '../types/Waifu';
+import { IO } from '../io/io';
 
 export class LargeLanguageModelCharacterAI implements LargeLanguageModel {
     #child_process: cproc.ChildProcess;
@@ -12,8 +12,8 @@ export class LargeLanguageModelCharacterAI implements LargeLanguageModel {
         this.#child_process = cproc.spawn('python', [ 'characterai_llm.py' ], { 
             cwd: process.cwd() + '/source/app/characterai_api/',
             env: {
-                CAI_TOKEN: wAIfu.state.auth["characterai"]["token"],
-                CHARACTER: JSON.stringify(wAIfu.state.characters[wAIfu.state.config._.character_name.value])
+                CAI_TOKEN: wAIfu.state!.auth["characterai"]["token"],
+                CHARACTER: JSON.stringify(wAIfu.state!.characters[wAIfu.state!.config._.character_name.value])
             },
             detached: false, shell: false
         });

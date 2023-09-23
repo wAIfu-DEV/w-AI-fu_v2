@@ -13,6 +13,8 @@ import subprocess
 
 from boilerplate import API
 
+os.system('title w-AI-fu NovelAI TTS')
+
 audio = pyaudio.PyAudio()
 
 device_index = 0
@@ -133,6 +135,9 @@ def prep_handle(message, websocket):
     asyncio.run(handle(message, websocket))
 
 def clear_audio_files():
+    if os.path.isdir('audio') == False:
+        os.mkdir('audio')
+        return
     dir_list = os.listdir('audio')
     for file in dir_list:
         os.remove('audio/' + file)
@@ -140,7 +145,7 @@ def clear_audio_files():
 async def main():
     clear_audio_files()
     with connect("ws://localhost:8766") as websocket:
-        while(True):
+        while True:
             message = websocket.recv()
             t = threading.Thread(target=prep_handle, args=[message, websocket])
             t.start()

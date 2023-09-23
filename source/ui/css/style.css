@@ -450,6 +450,17 @@ spacer {
     justify-content: center;
 }
 
+#parameters-presets {
+    display: flex;
+    max-width: 100%;
+    width: 60rem;
+    padding: 0.75rem 1.5rem;
+    border: solid 2px var(--border-color);
+    border-radius: 1.5rem;
+    margin-bottom: 1.5rem;
+    gap: 0.5rem;
+}
+
 #accounts {
     max-width: 100%;
     width: 60rem;
@@ -787,4 +798,51 @@ tmpl-contextual-memories-list-input {
     border-radius: 5rem;
     background-color: white;
     color: black;
+}
+
+dialog {
+    justify-content: center;
+    align-items: center;
+    max-width: 100vw;
+    width: 100vw;
+    max-height: 100vh;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+dialog[open] {
+    display: flex;
+}
+
+dialog > div {
+    display: flex;
+    flex-flow: column;
+    color: white;
+    background-color: var(--background-color);
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    border: solid 2px var(--border-color);
+    border-radius: 1.5rem;
+    padding: 1rem;
+    gap: 1.5rem;
+}
+
+.dialog-buttons {
+    display: flex;
+    justify-content: right;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dialog-buttons > div {
+    padding: calc(1.5rem / 2);
+    border: solid 2px var(--border-color);
+    border-radius: 1rem;
+    cursor: pointer;
+}
+
+#update-version-string {
+    color: #0080ff;
+    cursor: pointer;
 }

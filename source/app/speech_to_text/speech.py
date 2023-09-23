@@ -81,9 +81,9 @@ def ptt_record_audio():
     filename = "recorded.wav"
     chunk = 1024
     FORMAT = pyaudio.paInt16
-    channels = 1
     sample_rate = 44100
     paudio = pyaudio.PyAudio()
+    channels = paudio.get_device_info_by_index(index)["maxInputChannels"]
     stream = paudio.open(format=FORMAT,
                     channels=channels,
                     rate=sample_rate,
@@ -121,7 +121,7 @@ def recognize_file():
     recognizer = sr.Recognizer()
     with sr.AudioFile("recorded.wav") as source:
         audio = recognizer.listen(source)
-        recognize_audio(audio, recognizer)
+        recognize_audio(audio, recognizer, throw=False)
 
 def speech_recognition():
     global index, ws, provider, api_key
@@ -131,7 +131,7 @@ def speech_recognition():
             with sr.Microphone(device_index=index) as mic:
                 recognizer.adjust_for_ambient_noise(mic)
                 audio = recognizer.listen(mic, timeout=5)
-                recognize_audio(audio, recognizer)
+                recognize_audio(audio, recognizer, throw=True)
         except sr.UnknownValueError:
             recognizer = sr.Recognizer()
             continue
@@ -141,7 +141,7 @@ def speech_recognition():
         except:
             continue
 
-def recognize_audio(audio: sr.AudioData, recognizer: sr.Recognizer):
+def recognize_audio(audio: sr.AudioData, recognizer: sr.Recognizer, throw: bool):
     global provider, ws, api_key
     text = ''
     try:
@@ -151,12 +151,18 @@ def recognize_audio(audio: sr.AudioData, recognizer: sr.Recognizer):
             case "openai":
                 text = recognizer.recognize_whisper_api(audio, api_key=api_key)
     except sr.exceptions.SetupError as e:
+        if throw:
+            raise Exception()
         print("Incorrect OpenAI token.", file=sys.stderr)
         text = '...'
     except sr.exceptions.UnknownValueError as e:
+        if throw:
+            raise Exception()
         print("Could not understand audio.", file=sys.stderr)
         text = '...'
     except sr.exceptions.RequestError as e:
+        if throw:
+            raise Exception()
         print("Could not contact audio recognition API.", file=sys.stderr)
         text = '...'
     ws.send(text)

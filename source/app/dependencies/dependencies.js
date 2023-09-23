@@ -7,9 +7,9 @@ class Dependencies {
     tts;
     live_chat;
     ui = undefined;
-    vts = undefined;
+    vts;
     needs_reload = false;
-    constructor(_in, _llm, _tts, _live_chat, _ui = undefined, _vts = undefined) {
+    constructor(_in, _llm, _tts, _live_chat, _ui = undefined, _vts) {
         this.input_system = _in;
         this.llm = _llm;
         this.tts = _tts;

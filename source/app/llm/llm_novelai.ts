@@ -3,8 +3,8 @@ import WebSocket, { WebSocketServer } from 'ws';
 import * as cproc from 'child_process';
 import { Result } from "../types/Result";
 import { LLM_GEN_ERRORS, LargeLanguageModel, LlmGenerationSettings } from "./llm_interface";
-import { IO } from '../io/io';
 import { wAIfu } from '../types/Waifu';
+import { IO } from '../io/io';
 
 export class LargeLanguageModelNovelAI implements LargeLanguageModel {
 
@@ -16,8 +16,8 @@ export class LargeLanguageModelNovelAI implements LargeLanguageModel {
         this.#child_process = cproc.spawn('python', [ 'novel_llm.py' ], { 
             cwd: process.cwd() + '/source/app/novelai_api/',
             env: {
-                NAI_USERNAME: wAIfu.state.auth["novelai"]["mail"],
-                NAI_PASSWORD: wAIfu.state.auth["novelai"]["password"]
+                NAI_USERNAME: wAIfu.state!.auth["novelai"]["mail"],
+                NAI_PASSWORD: wAIfu.state!.auth["novelai"]["password"]
             },
             detached: false, shell: false
         });

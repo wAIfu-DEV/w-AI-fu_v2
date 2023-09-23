@@ -1,12 +1,11 @@
 {
   "name": "w-ai-fu",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "AI Vtuber program.",
   "main": "source/app/entry/index.js",
   "scripts": {
     "start": "electron --trace-warnings .",
-    "build": "npx tsc",
-    "build+run": "npx tsc && node source/app/entry/index.js"
+    "build": "npx tsc"
   },
   "author": "wAIfu_DEV",
   "license": "GPL-3.0-or-later",
@@ -17,6 +16,8 @@
   "dependencies": {
     "electron": "^25.5.0",
     "openai": "^4.0.0",
-    "ws": "^8.13.0"
+    "ws": "^8.13.0",
+    "extract-zip": "^2.0.1",
+    "@types/extract-zip": "^2.0.1"
   }
 }

@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { Auth } from './auth';
-import { IO } from '../io/io';
 import { isOfClassDeep } from '../types/Helper';
+import { IO } from '../io/io';
 
 export function importAuthFromFile_impl(): Auth {
 
@@ -21,7 +21,7 @@ export function importAuthFromFile_impl(): Auth {
         return new Auth();
     }
 
-    if (isOfClassDeep(json_obj, new Auth(), { print: true, obj_name: "auth" }) === false) {
+    if (isOfClassDeep(json_obj, new Auth(), { print: true, obj_name: "auth", add_missing_fields: true }) === false) {
         IO.warn('ERROR: Auth object failed to pass the sanity check.');
         return new Auth();
     }

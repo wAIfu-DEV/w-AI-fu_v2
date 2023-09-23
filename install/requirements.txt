@@ -6,3 +6,6 @@ novelai-api==0.19.0
 SpeechRecognition==3.10.0
 openai==0.27.8
 characterai==0.7.0
+numpy==1.24.3
+sounddevice==0.4.6
+soundfile==0.12.1

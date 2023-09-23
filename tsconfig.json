@@ -44,8 +44,8 @@
     // "noResolve": true,                                /* Disallow 'import's, 'require's or '<reference>'s from expanding the number of files TypeScript should add to a project. */
 
     /* JavaScript Support */
-    "allowJs": true,                                  /* Allow JavaScript files to be a part of your program. Use the 'checkJS' option to get errors from these files. */
-    "checkJs": true,                                  /* Enable error reporting in type-checked JavaScript files. */
+    "allowJs": false,                                  /* Allow JavaScript files to be a part of your program. Use the 'checkJS' option to get errors from these files. */
+    "checkJs": false,                                  /* Enable error reporting in type-checked JavaScript files. */
     // "maxNodeModuleJsDepth": 1,                        /* Specify the maximum folder depth used for checking JavaScript files from 'node_modules'. Only applicable with 'allowJs'. */
 
     /* Emit */
@@ -100,7 +100,7 @@
     "noImplicitOverride": true,                       /* Ensure overriding members in derived classes are marked with an override modifier. */
     "noPropertyAccessFromIndexSignature": true,       /* Enforces using indexed accessors for keys declared using an indexed type. */
     "allowUnusedLabels": true,                        /* Disable error reporting for unused labels. */
-    "allowUnreachableCode": true,                     /* Disable error reporting for unreachable code. */
+    "allowUnreachableCode": false,                     /* Disable error reporting for unreachable code. */
 
     /* Completeness */
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */

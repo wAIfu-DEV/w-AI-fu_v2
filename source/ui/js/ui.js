@@ -5,6 +5,7 @@ class State {
     static auth = undefined;
     static characters = undefined;
     static devices = undefined;
+    static presets = undefined;
 }
 
 class BackEndSocket {
@@ -161,6 +162,7 @@ async function main() {
     initializeUserNameInputBox();
     initializeInterruptButton();
     initializeResetButton();
+    initializeNewPresetButton();
 }
 main();
 
@@ -197,6 +199,20 @@ function initializeDeviceSelects(devices) {
             entry_select.removeAttribute('initialized');
             initializeTemplates();
         }
+    }
+}
+
+function initializeNewPresetButton() {
+    let add_btn = document.getElementById('new-preset-button');
+    if (add_btn === null) return;
+    add_btn.onclick = () => {
+        let preset_name = "";
+        let name_input = document.getElementById('new-preset-name-input');
+        if (name_input?.firstElementChild === null || name_input?.firstElementChild === undefined) return;
+        if ("value" in name_input?.firstElementChild && typeof name_input?.firstElementChild.value === "string") {
+            preset_name = name_input?.firstElementChild.value;
+        };
+        BackEnd.send('NEW_PRESET', { name: preset_name });
     }
 }
 
@@ -440,6 +456,7 @@ function initializeParamNavBar() {
             child_as_html.classList.add('important');
         };     
     }
+    document.getElementById('first-param-button')?.click();
 }
 
 /**
@@ -448,6 +465,10 @@ function initializeParamNavBar() {
  */
 function messageHandler(prefix, payload) {
     switch(prefix) {
+        case "PRESETS": {
+            State.presets = payload;
+            setupPresets(payload);
+        } break;        
         case "CONFIG": {
             State.config = payload;
             setupParamsPage(payload);
@@ -465,6 +486,11 @@ function messageHandler(prefix, payload) {
         case "CONSOLE_MESSAGE": {
             Terminal.addConsoleMessage(payload["text"], payload["color"]);
         } break;
+        case "CONSOLE_DEBUG": {
+            if (State.config === undefined) return;
+            if (State.config["behaviour"]["additional_logs"]["value"] === true)
+                Terminal.addConsoleMessage(payload["text"], payload["color"]);
+        } break;
         case "CHARACTERS": {
             State.characters = payload;
             setupCharacters();
@@ -478,6 +504,23 @@ function messageHandler(prefix, payload) {
         case "MESSAGE_CHAT": {
             Terminal.addChatMessage(payload["text"], payload["sender"]);
         } break;
+        case "VERSION": {
+            let v = document.getElementById('version-string');
+            if (v === null) return;
+            v.textContent = payload["version"];
+        } break;
+        case "UPDATE": {
+            /** @type {HTMLAnchorElement} */ // @ts-ignore
+            let v = document.getElementById("update-version-string");
+            if (v === null) return;
+            v.textContent = payload["version"];
+            v.href = `https://github.com/wAIfu-DEV/w-AI-fu_v2/releases/tag/${payload["version"]}`;
+            
+            /** @type {HTMLDialogElement} */ // @ts-ignore
+            let d = document.getElementById("dialog-update");
+            if (d === null) return;
+            d.showModal();
+        }
     }
 }
 
@@ -542,22 +585,34 @@ function setCharacter(char_name) {
 }
 
 function saveCharacter() {
-    let character = {};
+    /** @type { HTMLSelectElement } */ // @ts-ignore
+    let char_select = document.getElementById('character-edit-select')?.firstElementChild;
+    let char_file_name = char_select.value;
+
+    /** @type {{file:string, character: any}} */
+    let wrapper = {
+        file: char_file_name,
+        character: {}
+    };
 
     let character_name = document.getElementById("character-edit-name");
     if (character_name === null) return;
-    character["char_name"] = character_name.textContent;
+    wrapper.character["char_name"] = character_name.innerHTML
+        ?.replaceAll(/<br>/g, "\n").replaceAll(/<div>/g, "\n").replaceAll(/<\/div>/g, "").replaceAll(/&\w+;/g, "");
     let character_desc = document.getElementById("character-edit-desc");
     if (character_desc === null) return;
-    character["char_persona"] = character_desc.textContent;
+    wrapper.character["char_persona"] = character_desc.innerHTML
+        ?.replaceAll(/<br>/g, "\n").replaceAll(/<div>/g, "\n").replaceAll(/<\/div>/g, "").replaceAll(/&\w+;/g, "");
     let character_dialogue = document.getElementById("character-edit-dialogue");
     if (character_dialogue === null) return;
-    character["example_dialogue"] = character_dialogue.textContent;
+    wrapper.character["example_dialogue"] = character_dialogue.innerHTML
+        ?.replaceAll(/<br>/g, "\n").replaceAll(/<div>/g, "\n").replaceAll(/<\/div>/g, "").replaceAll(/&\w+;/g, "");
     let character_voice = document.getElementById("character-edit-voice");
     if (character_voice === null) return;
-    character["voice"] = character_voice.textContent;
+    wrapper.character["voice"] = character_voice.innerHTML
+        ?.replaceAll(/<br>/g, "\n").replaceAll(/<div>/g, "\n").replaceAll(/<\/div>/g, "").replaceAll(/&\w+;/g, "");
 
-    return character;
+    return wrapper;
 }
 
 /** @param {any} auth */
@@ -929,4 +984,27 @@ function generateConfig(config) {
     }
 
     return config;
+}
+
+/**
+ * @param { {presets: string[], current: string} } payload 
+ */
+function setupPresets(payload) {
+    let select = document.getElementById('preset-select');
+    if (select === null) return;
+
+    select.removeAttribute('initialized');
+    select.setAttribute('options', payload.presets.join(','));
+    select.setAttribute('default', payload.current);
+
+    initializeTemplates();
+
+    /** @type { HTMLSelectElement } */ // @ts-ignore
+    let select_element = select.firstElementChild;
+    if (select_element === null) return;
+
+    select_element.onchange = () => {
+        let new_preset = select_element.value;
+        BackEnd.send('PRESET', { preset: new_preset });
+    };
 }

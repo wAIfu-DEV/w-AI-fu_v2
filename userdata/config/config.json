@@ -26,7 +26,7 @@
             "reload": false,
             "type": "boolean",
             "default": false,
-            "value": false
+            "value": true
         },
         "vts_session_token": {
             "hint": "VTS auth session token.",
@@ -62,7 +62,7 @@
             "hint": "Time in seconds to wait for before reading the next chat message.",
             "reload": false,
             "type": "number",
-            "default": 0,
+            "default": 0.05,
             "min": 0.05,
             "max": 999,
             "value": 0.05
@@ -97,10 +97,17 @@
             "hint": "Modify the probability of triggering a monologue when no other input sources are available.",
             "reload": false,
             "type": "number",
-            "default": 100,
+            "default": 1,
             "min": 0,
             "max": 100,
-            "value": 100
+            "value": 1
+        },
+        "try_prevent_freakouts": {
+            "hint": "Tries to prevent freakouts by altering response in order to keep the AI on track and sane.",
+            "reload": false,
+            "type": "boolean",
+            "default": true,
+            "value": true
         },
         "additional_logs": {
             "hint": "Displays debug-related logs in the console.",
@@ -124,8 +131,24 @@
             "type": "number",
             "default": 10,
             "min": 1,
-            "max": 20,
+            "max": 30,
             "value": 10
+        },
+        "memory_decontamination": {
+            "hint": "Adds phantom entries to the short-term memory in order to prevent the AI from showing symptoms of prompt poisoning.",
+            "reload": false,
+            "type": "boolean",
+            "default": true,
+            "value": true
+        },
+        "decontamination_percentage": {
+            "hint": "Percentage of decontamination entries to push inside the short-term memory. If \"Max Short Term Memory Entries\" is set to 10 and the percentage is set to 20 then the number of entries to add will be 2.",
+            "reload": false,
+            "type": "number",
+            "default": 50,
+            "min": 0,
+            "max": 50,
+            "value": 50
         },
         "contextual_memories": {
             "hint": "Memories to be remembered based on context (i.e if encounters keyword)",
@@ -143,14 +166,49 @@
                         "code",
                         "language"
                     ],
-                    "content": "w-AI-fu (or ai waifu) is an open-source program written in the languagesh TypeScript and Python used to create and run customized AI Vtubers. It was created by w-AI-fu_DEV (aka DEV). It is the program currently running."
+                    "content": "w-AI-fu (or ai waifu) is an open-source program written in the languages TypeScript and Python used to create and run customized AI Vtubers. It was created by w-AI-fu_DEV (aka DEV). It is the program currently running."
                 }
             ]
         }
     },
     "moderation": {
         "filter_bad_words": {
-            "hint": "Checks the content of the character's speech for bad words.",
+            "hint": "Checks the content of the character's speech and incoming chat messages for bad words.",
+            "reload": true,
+            "type": "boolean",
+            "default": true,
+            "value": true
+        },
+        "censor_placeholder": {
+            "hint": "Text spoken in place of the filtered response.",
+            "reload": false,
+            "type": "string",
+            "default": "Filtered.",
+            "value": "Filtered."
+        },
+        "retry_after_filtered": {
+            "hint": "Generates a new response if the previous one got filtered. If disabled, speaks the censor phrase.",
+            "reload": false,
+            "type": "boolean",
+            "default": true,
+            "value": true
+        },
+        "sfw_generation_hint": {
+            "hint": "Makes NovelAI more likely to keep the story SFW. While it should reduce the likelyhood of generation NSFW content, it is not a garantee.",
+            "reload": false,
+            "type": "boolean",
+            "default": false,
+            "value": false
+        },
+        "filter_spam_messages": {
+            "hint": "Ignore spam chat messages.",
+            "reload": true,
+            "type": "boolean",
+            "default": true,
+            "value": true
+        },
+        "remove_non_ascii_from_chat": {
+            "hint": "Removes any non-ascii characters from chat messages. Prevents chat users from using special characters to bypass the bad words filter.",
             "reload": true,
             "type": "boolean",
             "default": true,
@@ -174,7 +232,8 @@
             "reload": true,
             "type": "select",
             "options": [
-                "twitch"
+                "twitch",
+                "youtube"
             ],
             "default": "twitch",
             "value": "twitch"
@@ -269,10 +328,10 @@
             "hint": "",
             "reload": false,
             "type": "number",
-            "default": -0.35,
+            "default": 0,
             "min": -1,
             "max": 1,
-            "value": -0.35
+            "value": 0
         },
         "max_output_length": {
             "hint": "",
@@ -281,7 +340,7 @@
             "default": 80,
             "min": 0,
             "max": 200,
-            "value": 50
+            "value": 80
         }
     },
     "tts": {
@@ -291,7 +350,7 @@
             "type": "number",
             "default": 10,
             "min": -100,
-            "max": 50,
+            "max": 100,
             "value": 10
         },
         "use_narrator_to_read_chat": {

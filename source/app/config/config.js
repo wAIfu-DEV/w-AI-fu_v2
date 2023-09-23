@@ -26,6 +26,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContextualMemoryEntry = exports.ConfigFieldContextualMemoryList = exports.VtsEmotion = exports.ConfigFieldVtsEmotionList = exports.ConfigFieldList = exports.ConfigFieldSelect = exports.ConfigFieldNumber = exports.ConfigFieldBoolean = exports.ConfigFieldString = exports.Config = void 0;
 const fs = __importStar(require("fs"));
 const import_config_1 = require("./import_config");
+const available_presets_1 = require("./available_presets");
+const get_last_preset_1 = require("./get_last_preset");
 class Config {
     "_" = {
         "user_name": new ConfigFieldString(),
@@ -43,15 +45,23 @@ class Config {
         "always_read_highlighted": new ConfigFieldBoolean(),
         "monologue": new ConfigFieldBoolean(),
         "monologue_chance_percent": new ConfigFieldNumber(),
+        "try_prevent_freakouts": new ConfigFieldBoolean(),
         "additional_logs": new ConfigFieldBoolean(),
         "log_to_file": new ConfigFieldBoolean()
     };
     "memory" = {
         "max_short_term_memory_entries": new ConfigFieldNumber(),
+        "memory_decontamination": new ConfigFieldBoolean(),
+        "decontamination_percentage": new ConfigFieldNumber(),
         "contextual_memories": new ConfigFieldContextualMemoryList()
     };
     "moderation" = {
         "filter_bad_words": new ConfigFieldBoolean(),
+        "censor_placeholder": new ConfigFieldString(),
+        "retry_after_filtered": new ConfigFieldBoolean(),
+        "sfw_generation_hint": new ConfigFieldBoolean(),
+        "filter_spam_messages": new ConfigFieldBoolean(),
+        "remove_non_ascii_from_chat": new ConfigFieldBoolean(),
         "blacklisted_chatters": new ConfigFieldList()
     };
     "providers" = {
@@ -87,8 +97,8 @@ class Config {
         fs.writeFileSync(process.cwd() + '/userdata/config/config.json', serialized);
     }
     static importFromFile = import_config_1.importFromFile_impl;
-    static CONFIG_PATH = process.cwd() + "/userdata/config/config.json";
-    static CONFIG_BACKUP_PATH = process.cwd() + "/userdata/config/config.backup.json";
+    static getAllPresets = available_presets_1.getAllPresets_impl;
+    static getPreset = get_last_preset_1.getPreset_impl;
 }
 exports.Config = Config;
 class ConfigFieldString {

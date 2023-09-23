@@ -1,6 +1,5 @@
 import { InputSystem } from "../input/input_interface";
 import { InputSystemText } from "../input/input_text";
-import { IO } from "../io/io";
 import { LiveChat } from "../live_chat/live_chat_interface";
 import { LiveChatTwitch } from "../live_chat/twitch_chat";
 import { LargeLanguageModel } from "../llm/llm_interface";
@@ -14,6 +13,8 @@ import { InputSystemVoice } from "../input/input_voice";
 import { LiveChatNone } from "../live_chat/live_chat_none";
 import { LargeLanguageModelCharacterAI } from "../llm/llm_characterai";
 import { wAIfu } from "../types/Waifu";
+import { IO } from "../io/io";
+import { VtubeStudioAPI } from "../vtube_studio/vtube_studio";
 
 export async function loadDependencies(config: Config): Promise<Dependencies> {
 
@@ -74,6 +75,8 @@ export async function loadDependencies(config: Config): Promise<Dependencies> {
         }
     }
 
+    let vts = new VtubeStudioAPI();
+
     // Now this is something great:
     // Since all our modules are independent, they don't require a specific
     // in order to boot. That means we can initialize everything at once.
@@ -87,9 +90,9 @@ export async function loadDependencies(config: Config): Promise<Dependencies> {
 
     IO.debug(`LLM: ${llm_provider
             }, TTS: ${tts_provider
-            }, STT: ${wAIfu.state.config.providers.stt_provider.value
+            }, STT: ${wAIfu.state!.config.providers.stt_provider.value
             }, LIVE: ${live_chat_provider
             }`);
 
-    return new Dependencies(input_sys, llm, tts, live_chat);
+    return new Dependencies(input_sys, llm, tts, live_chat, undefined, vts);
 }

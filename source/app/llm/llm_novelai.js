@@ -28,8 +28,8 @@ const ws_1 = __importStar(require("ws"));
 const cproc = __importStar(require("child_process"));
 const Result_1 = require("../types/Result");
 const llm_interface_1 = require("./llm_interface");
-const io_1 = require("../io/io");
 const Waifu_1 = require("../types/Waifu");
+const io_1 = require("../io/io");
 class LargeLanguageModelNovelAI {
     #child_process;
     #websocket = new ws_1.default(null);

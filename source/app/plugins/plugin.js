@@ -15,8 +15,10 @@ class PluginFile {
         "command-handling": "",
         "response-handling": "",
         "main-loop-end": "",
-        "quit": ""
+        "quit": "",
+        "interrupt": ""
     };
+    "activated" = false;
 }
 exports.PluginFile = PluginFile;
 class Plugin {
@@ -57,6 +59,9 @@ class Plugin {
     onResponseHandling(response) {
         let ret = this.#callEvent("response-handling", [response]);
         return (typeof ret === "string") ? ret : undefined;
+    }
+    onInterrupt() {
+        this.#callEvent("interrupt", []);
     }
 }
 exports.Plugin = Plugin;

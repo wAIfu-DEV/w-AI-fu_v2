@@ -5,9 +5,10 @@ import { AppState } from "../state/state";
 import { Plugin } from "../plugins/plugin";
 
 export class WaifuApp {
+    version: string = '';
     getVersion = getVersion_impl;
     mainLoop = mainLoop_impl;
-    state: AppState = new AppState();
+    state: AppState|undefined = undefined;
     dependencies: Dependencies|undefined = undefined;
     plugins: Plugin[] = [];
 }
