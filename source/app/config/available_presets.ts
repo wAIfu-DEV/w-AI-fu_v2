@@ -1,5 +1,10 @@
 import * as fs from "fs";
 
+/**
+ * Reads every json files in the `userdata/config/` folder and return their 
+ * name (with extension)
+ * @returns array of the config file names. ex: ["config.json"]
+ */
 export function getAllPresets_impl(): string[] {
     const PRESETS_PATH = process.cwd() + "/userdata/config";
 

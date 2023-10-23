@@ -28,6 +28,7 @@ const fs = __importStar(require("fs"));
 const config_1 = require("./config");
 const io_1 = require("../io/io");
 const Helper_1 = require("../types/Helper");
+const generate_updated_config_1 = require("./generate_updated_config");
 function importFromFile_impl(preset) {
     if (preset === null || preset === undefined)
         return new config_1.Config();
@@ -49,11 +50,13 @@ function importFromFile_impl(preset) {
         return new config_1.Config();
     }
     if ((0, Helper_1.isOfClassDeep)(json_obj, new config_1.Config(), {
-        add_missing_fields: true, obj_name: "config", print: true
+        add_missing_fields: true,
+        obj_name: "config",
+        print: false,
     }) === false) {
         io_1.IO.warn("ERROR: Preset file", preset, " did not pass sanity test.");
         return new config_1.Config();
     }
-    return json_obj;
+    return (0, generate_updated_config_1.generateUpdatedConfig)(json_obj);
 }
 exports.importFromFile_impl = importFromFile_impl;

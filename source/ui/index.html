@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,13 +9,14 @@
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
     <title>w-AI-fu</title>
 </head>
+
 <body>
     <header>
         <div>
             <img src="icon.ico" alt="logo">
             <div id="header-text">
                 <h1>w-AI-fu</h1>
-                <p id="version-string">2.0.0</p>
+                <p id="version-string">2.0.2</p>
             </div>
         </div>
         <spacer></spacer>
@@ -25,7 +27,7 @@
             <navbutton class="button" linkedpage="page-accounts">Accounts</navbutton>
         </nav>
     </header>
-    
+
     <section id="page-console" class="page">
         <div id="console-wrapper">
             <div id="console">
@@ -40,15 +42,20 @@
                 <div id="console-terminal"></div>
                 <div id="console-input">
                     <div id="username-box" contenteditable="true" placeholder="Name">USER</div>
-                    <div id="console-inputbox" contenteditable="true"
-                        placeholder="Write here to talk to the character."></div>
+                    <div id="console-inputbox" contenteditable="true" placeholder="Write here to talk to the character."
+                        title="!help to see available commands">
+                    </div>
                     <div id="console-inputbox-send" class="button">Send</div>
                 </div>
                 <div id="console-controls">
                     <div id="control-interrupt" class="control-button button important">Interrupt</div>
                     <div id="control-pause" class="control-button button">Pause</div>
                     <div id="control-reset" class="control-button button">Clear Memory</div>
-                    <hint title="[Interrupt]: Stop the character in its speech.&#10;[Pause]: Toggleable, prevents the character from talking until it is unpaused.&#10;[Clear Memory]: Erases the character's short-term memory." ></hint>
+                    <div id="control-clearconsole" class="control-button button">Clear Console</div>
+                    <div id="control-monologue" class="control-button button">Monologue</div>
+                    <hint
+                        title="Buttons:&#10;&#9;[Interrupt]: Stop the character in its speech.&#10;&#9;[Pause]: Toggleable, prevents the character from talking until it is unpaused.&#10;&#9;[Clear Memory]: Erases the character's short-term memory.&#10;&#9;[Clear Console]: Clears the contents of the console.&#10;&#9;[Monologue]: Prompts the character to start a monologue.&#10;&#10;Commands:&#10;&#9;!help to see available commands">
+                    </hint>
                 </div>
             </div>
         </div>
@@ -80,19 +87,26 @@
                 </span>
                 <span>
                     <p>Character Name</p>
-                    <div id="character-edit-name" style="white-space: pre-line; display: inline;" contenteditable="true"></div>
+                    <div id="character-edit-name" style="white-space: pre-line; display: inline;"
+                        contenteditable="true"></div>
                 </span>
                 <span>
                     <p>Character Description</p>
-                    <div id="character-edit-desc" style="white-space: pre-line; display: inline;" contenteditable="true"></div>
+                    <div id="character-edit-desc" style="white-space: pre-line; display: inline;"
+                        contenteditable="true"></div>
                 </span>
                 <span>
                     <p>Context Dialogue</p>
-                    <div id="character-edit-dialogue" style="white-space: pre-line; display: inline;" contenteditable="true"></div>
+                    <div id="character-edit-dialogue" style="white-space: pre-line; display: inline;"
+                        contenteditable="true"></div>
                 </span>
                 <span>
                     <p>Voice</p>
-                    <div id="character-edit-voice" style="white-space: pre-line; display: inline;" contenteditable="true"></div>
+                    <inline>
+                        <div id="character-edit-voice" style="white-space: pre-line; display: inline; flex-grow: 1;"
+                            contenteditable="true"></div>
+                        <div id="test-audio-voice" class="test-btn button" style="margin-top: 0.5rem; margin-left: 0.5rem;" title="Test voice" onclick="BackEnd.send('COMMAND', { text: '!test_voice ' + window['character-edit-voice'].textContent });">▶</div>
+                    </inline>
                 </span>
             </div>
             <div id="characters-footer">
@@ -120,19 +134,19 @@
         <div id="dialog-update-box">
             <p>Version <a id="update-version-string" target="_blank">2.0.0</a> of w-AI-fu is available, update now ?</p>
             <div class="dialog-buttons">
-                <div 
-                    class="button important"
-                    onclick="BackEnd.send('UPDATE', {})"
-                    >Update</div>
-                <div
-                    class="button"
-                    onclick="closeUpdateDialog()"
-                    >Cancel</div>
+                <div class="button important" onclick="BackEnd.send('UPDATE', {})">Update</div>
+                <div class="button" onclick="closeUpdateDialog()">Cancel</div>
             </div>
         </div>
     </dialog>
 
     <footer></footer>
+
+    <!--
+        OK, so all of what comes after this point is an attempt to make
+        templatized elements.
+        It fucking sucks.
+    -->
 
     <script>
         /** @param {HTMLInputElement} element */
@@ -151,7 +165,7 @@
     </script>
     <template id="tmpl-number-input">
         <input class="number-input" type="number" onload="tmpl_number_input_set(this)"
-            onchange="tmp_number_input_change(this)"/>
+            onchange="tmp_number_input_change(this)" />
     </template>
 
     <script>
@@ -162,7 +176,7 @@
         }
     </script>
     <template id="tmpl-string-input">
-        <input class="string-input" type="text" onload="tmpl_string_input_set(this)"/>
+        <input class="string-input" type="text" onload="tmpl_string_input_set(this)" />
     </template>
 
     <script>
@@ -172,7 +186,7 @@
         }
     </script>
     <template id="tmpl-check-input">
-        <input class="checkbox-input" type="checkbox" onload="tmpl_check_input_set(this)"/>
+        <input class="checkbox-input" type="checkbox" onload="tmpl_check_input_set(this)" />
     </template>
 
     <script>
@@ -190,6 +204,20 @@
                 if (item === default_option)
                     new_option.setAttribute('selected', 'selected');
                 element.appendChild(new_option);
+            }
+            const should_test = element.parentElement.getAttribute('test');
+            if (should_test != null) {
+                let test_btn = document.createElement('div');
+                test_btn.classList.add('test-btn-small', 'button');
+                test_btn.style.marginLeft = "0.5rem";
+                test_btn.textContent = "▶";
+                test_btn.onclick = () => {
+                    const device = element.value;
+                    BackEnd.send("COMMAND", { text: "!test_device " + device });
+                };
+                element.parentElement.style.display = "flex";
+                element.parentElement.style.alignItems = "center";
+                element.parentElement.appendChild(test_btn);
             }
         }
     </script>
@@ -240,7 +268,7 @@
 
     <script>
         /** @param {HTMLElement} element */
-        function tmpl_vts_emotes_list_input_addItem(element, name="", talking_sequence=[], idle_sequence=[], reset_sequence=[]) {
+        function tmpl_vts_emotes_list_input_addItem(element, name = "", talking_sequence = [], idle_sequence = [], reset_sequence = []) {
             let new_entry = document.createElement('div');
             new_entry.classList.add('biglist-entry');
             let head_line = document.createElement('div');
@@ -317,8 +345,68 @@
     </template>
 
     <script>
+        /** @param {HTMLElement} element */
+        function tmpl_vts_keywords_list_input_addItem(element, keywords = [], sequence = []) {
+            let new_entry = document.createElement('div');
+            new_entry.classList.add('biglist-entry');
+            let head_line = document.createElement('div');
+            head_line.classList.add('biglist-entry-line');
+            let remove_btn = document.createElement('div');
+            remove_btn.textContent = "–";
+            remove_btn.classList.add('list-remove-button');
+            let keywords_line = document.createElement('div');
+            keywords_line.classList.add('biglist-entry-line');
+            let keywords_p = document.createElement('p');
+            keywords_p.textContent = "Talking Hotkey Sequence";
+            let keywords_list = document.createElement('tmpl-list-input');
+            keywords_list.setAttribute('list', keywords.join(','));
+            let sequence_line = document.createElement('div');
+            sequence_line.classList.add('biglist-entry-line');
+            let sequence_p = document.createElement('p');
+            sequence_p.textContent = "Idle Hotkey Sequence";
+            let sequence_list = document.createElement('tmpl-list-input');
+            sequence_list.setAttribute('list', sequence.join(','));
+            head_line.appendChild(remove_btn);
+            keywords_line.appendChild(keywords_p);
+            keywords_line.appendChild(keywords_list);
+            sequence_line.appendChild(sequence_p);
+            sequence_line.appendChild(sequence_list);
+            new_entry.appendChild(head_line);
+            new_entry.appendChild(keywords_line);
+            new_entry.appendChild(sequence_line);
+            element.parentElement.firstElementChild.appendChild(new_entry);
+            initializeTemplates();
+            remove_btn.onclick = () => {
+                new_entry.parentElement.removeChild(new_entry);
+            };
+        }
+        /** @param {HTMLElement} element */
+        function tmpl_vts_keywords_list_input_set(element) {
+            let template = element.parentElement;
+            let raw_data = template.getAttribute('listdata');
+            if (raw_data === null) return;
+            let split_data = raw_data.split('#@51248');
+            for (let data_entry of split_data) {
+                let parsed = JSON.parse(data_entry);
+                if (parsed === undefined) continue;
+                tmpl_vts_keywords_list_input_addItem(
+                    template.firstElementChild.firstElementChild,
+                    parsed["keywords"],
+                    parsed["hotkey_sequence"],
+                );
+            }
+        }
+    </script>
+    <template id="tmpl-vts-keywords-list-input">
+        <div class="biglist-wrapper" onload="tmpl_vts_keywords_list_input_set(this)">
+            <div class="biglist"></div>
+            <div class="biglist-add-button" onclick="tmpl_vts_keywords_list_input_addItem(this)">+</div>
+        </div>
+    </template>
+
+    <script>
         /** @param {HTMLElement} element @param {string[]} keywords */
-        function tmpl_contextual_memories_list_input_addItem(element, keywords=[], content="") {
+        function tmpl_contextual_memories_list_input_addItem(element, keywords = [], content = "") {
             let new_entry = document.createElement('div');
             new_entry.classList.add('biglist-entry');
             let head_line = document.createElement('div');
@@ -383,4 +471,5 @@
 
     <script src="js/ui.js"></script>
 </body>
+
 </html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>w-AI-fu Closed Captions Brower Source</title>
+
+    <style>
+        body {
+            /* Text formating */
+            color: white;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 4vw;
+            font-weight: 700;
+            /*-webkit-text-stroke: black 5px;*/
+
+            text-shadow: 0px 0.25vw 0px rgba(0, 0, 0, 1);
+
+            /*
+            text-shadow: -5px -5px 0 #000, 5px -5px 0 #000, -5px 5px 0 #000, 5px 5px 0 #000;
+            */
+            display: flex;
+            flex-flow: column;
+            justify-content: end;
+
+            padding: 0px;
+            margin: 0px;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #text {
+            margin-top: auto;
+            padding: 0px;
+            margin: 0px;
+            width: 100%;
+
+            white-space: pre-line;
+        }
+    </style>
+</head>
+
+<body>
+    <p id="text"></p>
+
+    <script>
+        let subs = document.getElementById('text');
+        let writing = false;
+        let interrupt = false;
+
+        function ajustFontSize() {
+            let body = document.body;
+
+            const changeAndCheck = () => {
+                if (subs.scrollHeight < body.scrollHeight) return;
+                let new_size = parseInt(window.getComputedStyle(subs).fontSize.replace('px', ''));
+                new_size = Math.floor(new_size * 0.9);
+                subs.style.fontSize = new_size.toString() + "px";
+                setTimeout(changeAndCheck, 0);
+            };
+            setTimeout(changeAndCheck, 0);
+        }
+
+        let websocket = undefined;
+
+        const tryConnect = () => {
+            websocket = new WebSocket('ws://127.0.0.1:8756');
+
+            websocket.onopen = () => {
+                console.log("CONNECTED");
+            };
+
+            websocket.onclose = () => {
+                console.log("DISCONNECTED");
+                interrupt = true;
+                subs.textContent = "";
+                setTimeout(tryConnect, 0);
+            };
+
+            websocket.onerror = (ev) => {
+                if (ev.code == 3001) return;
+                interrupt = true;
+                subs.textContent = String(ev);
+            };
+
+            websocket.onmessage = (ev) => {
+                let data = String(ev.data);
+
+                console.log("MESSAGE", data);
+
+                const split_data = data.split(' ');
+                const prefix = split_data[0] || data;
+
+                switch (prefix) {
+                    case 'WORD': {
+                        let word = split_data.slice(1, undefined).join(' ') + ' ';
+                        subs.textContent += word;
+                        break;
+                    }
+                    case 'CLEAR': {
+                        subs.textContent = "";
+                        break;
+                    }
+                }
+                ajustFontSize();
+            };
+        };
+
+        tryConnect();
+
+        //displayText("Hey guys, did you know that in terms of male human and female Pokémon breeding, Vaporeon is the most compatible Pokémon for humans? Not only are they in the field egg group, which is mostly comprised of mammals, Vaporeon are an average of 3''03' tall and 63.9 pounds. this means they're large enough to be able to handle human dicks, and with their impressive Base Stats for HP and access to Acid Armor, you can be rough with one. Due to their mostly water based biology, there's no doubt in my mind that an aroused Vaporeon would be incredibly wet, so wet that you could easily have sex with one for hours without getting sore. They can also learn the moves Attract, Baby-Doll Eyes, Captivate, Charm, and Tail Whip, along with not having fur to hide nipples, so it'd be incredibly easy for one to get you in the mood. With their abilities Water Absorb and Hydration, they can easily recover from fatigue with enough water. No other Pokémon comes close to this level of compatibility. Also, fun fact, if you pull out enough, you can make your Vaporeon turn white.", 60);
+    </script>
+
+</body>
+
+</html>

@@ -5,46 +5,79 @@ import { wAIfu } from "../types/Waifu";
 import { Result } from "../types/Result";
 import { TwitchEventSubs } from "../twitch/twitch_eventsub";
 import { IO } from "../io/io";
+import { removeNonAsciiSymbols } from "../sanitize/sanitize";
+import { handleCommand } from "../commands/command_handler";
 
 export class LiveChatTwitch implements LiveChat {
-
     #websocket: WebSocket;
     #enventsub: TwitchEventSubs;
 
-    #buffer: {message: Message, metadata: string}[] = [];
-    #prioritized_buffer: {message: Message, metadata: string}[] = [];
+    #buffer: { message: Message; metadata: string }[] = [];
+    #prioritized_buffer: { message: Message; metadata: string }[] = [];
 
     constructor() {
-        this.#websocket = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+        this.#websocket = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
         this.#enventsub = new TwitchEventSubs();
     }
 
     initialize(): Promise<void> {
         return new Promise<void>((resolve) => {
             let resolved = false;
-            this.#websocket.on('open', () => {
-                this.#websocket.send('CAP REQ :twitch.tv/commands twitch.tv/membership twitch.tv/tags');
-                this.#websocket.send(`PASS oauth:${wAIfu.state!.auth.twitch.oauth_token}`);
-                this.#websocket.send(`NICK ${wAIfu.state!.auth.twitch.channel_name.toLowerCase()}`);
-                this.#websocket.send(`JOIN #${wAIfu.state!.auth.twitch.channel_name.toLowerCase()}`);
+            this.#websocket.on("open", () => {
+                this.#websocket.send(
+                    "CAP REQ :twitch.tv/commands twitch.tv/membership twitch.tv/tags"
+                );
+                this.#websocket.send(
+                    `PASS oauth:${wAIfu.state!.auth.twitch.oauth_token}`
+                );
+                this.#websocket.send(
+                    `NICK ${wAIfu.state!.auth.twitch.channel_name.toLowerCase()}`
+                );
+                this.#websocket.send(
+                    `JOIN #${wAIfu.state!.auth.twitch.channel_name.toLowerCase()}`
+                );
             });
-            this.#websocket.on('error', (data: WebSocket.RawData) => {
-                let data_str = data.toString('utf8');
-                IO.warn('Twitch API:', data_str);
+            this.#websocket.on("error", (data: WebSocket.RawData) => {
+                let data_str = data.toString("utf8");
+                IO.warn("Twitch API:", data_str);
             });
-            this.#websocket.on('message', (data: WebSocket.RawData) => {
+
+            this.#websocket.on("message", (data: WebSocket.RawData) => {
                 if (resolved === false) {
                     resolved = true;
                     this.#enventsub.connectTwitchEventSub();
+                    this.#enventsub.on("reconnect", () => {
+                        this.#enventsub = new TwitchEventSubs();
+                    });
+                    IO.debug("Loaded LiveChatTwitch.");
                     resolve();
                 }
-                let data_str = data.toString('utf8');
+
+                let data_str = data.toString("utf8");
                 IO.debug(data_str);
-                if (data_str.includes('PING')) {
-                    this.#websocket.send('PONG');
+                if (data_str.includes("PING")) {
+                    this.#websocket.send("PONG");
+                    return;
                 }
                 let parsed_data = this.#parseMessage(data_str.trim());
                 if (parsed_data === null) return;
+
+                if (parsed_data.msg.message.content.startsWith("!")) {
+                    let handled = false;
+
+                    for (let plugin of wAIfu.plugins) {
+                        handled = plugin.onCommandHandling(
+                            parsed_data.msg.message.content,
+                            false,
+                            parsed_data.msg.message.sender
+                        );
+                        if (handled) return;
+                    }
+
+                    handleCommand(parsed_data.msg.message.content, false);
+                    return;
+                }
+
                 if (parsed_data.prioritized === true) {
                     this.#prioritized_buffer.push(parsed_data.msg);
                 } else {
@@ -53,12 +86,13 @@ export class LiveChatTwitch implements LiveChat {
             });
         });
     }
-    
+
     free(): Promise<void> {
         return new Promise((resolve) => {
-            if (this.#websocket.readyState !== WebSocket.CLOSED
-            &&  this.#websocket.readyState !== WebSocket.CLOSING)
-            {
+            if (
+                this.#websocket.readyState !== WebSocket.CLOSED &&
+                this.#websocket.readyState !== WebSocket.CLOSING
+            ) {
                 this.#websocket.close();
             }
             this.#websocket.removeAllListeners();
@@ -67,8 +101,16 @@ export class LiveChatTwitch implements LiveChat {
         });
     }
 
-    nextMessage(): Result<Message,null> {
-        switch (wAIfu.state!.config.behaviour.chat_reading_mode.value) {
+    send(message: string): void {
+        this.#websocket.send(
+            `PRIVMSG #${wAIfu
+                .state!.auth.twitch.channel_name.trim()
+                .toLowerCase()} :${message}`
+        );
+    }
+
+    nextMessage(): Result<Message, null> {
+        switch (wAIfu.state!.config.live_chat.chat_reading_mode.value) {
             case "latest":
                 return this.#policyLatest();
             case "all":
@@ -80,9 +122,10 @@ export class LiveChatTwitch implements LiveChat {
         }
     }
 
-    #policyLatestBuffered(): Result<Message,null> {
+    #policyLatestBuffered(): Result<Message, null> {
         while (true) {
-            let content: {message: Message, metadata: string}|undefined = undefined;
+            let content: { message: Message; metadata: string } | undefined =
+                undefined;
             if (this.#prioritized_buffer.length !== 0) {
                 content = this.#prioritized_buffer.shift();
             } else {
@@ -90,17 +133,17 @@ export class LiveChatTwitch implements LiveChat {
                     return new Result(false, new Message(), null);
                 content = this.#buffer.pop();
                 // Limit buffer size to 4 so that old messages get cleaned
-                while (this.#buffer.length > 4)
-                    this.#buffer.shift();
+                while (this.#buffer.length > 4) this.#buffer.shift();
             }
             if (content === undefined) continue;
             return new Result(true, content.message, null);
         }
     }
 
-    #policyLatest(): Result<Message,null> {
+    #policyLatest(): Result<Message, null> {
         while (true) {
-            let content: {message: Message, metadata: string}|undefined = undefined;
+            let content: { message: Message; metadata: string } | undefined =
+                undefined;
             if (this.#prioritized_buffer.length !== 0) {
                 content = this.#prioritized_buffer.shift();
             } else {
@@ -114,9 +157,10 @@ export class LiveChatTwitch implements LiveChat {
         }
     }
 
-    #policyAll(): Result<Message,null> {
+    #policyAll(): Result<Message, null> {
         while (true) {
-            let content: {message: Message, metadata: string}|undefined = undefined;
+            let content: { message: Message; metadata: string } | undefined =
+                undefined;
             if (this.#prioritized_buffer.length !== 0) {
                 content = this.#prioritized_buffer.shift();
             } else {
@@ -129,8 +173,12 @@ export class LiveChatTwitch implements LiveChat {
         }
     }
 
-    #parseMessage(str: string): { msg: { message: Message, metadata: string }, prioritized: boolean }|null {
-        let matches = /^(@.*?)(?: :)(.*?)(?:!.*? )(.*?)(?: )(?:#.*? :)(.*)$/g.exec(str);
+    #parseMessage(str: string): {
+        msg: { message: Message; metadata: string };
+        prioritized: boolean;
+    } | null {
+        let matches =
+            /^(@.*?)(?: :)(.*?)(?:!.*? )(.*?)(?: )(?:#.*? :)(.*)$/g.exec(str);
         if (matches === null) return null;
         let type = matches[3];
         if (type !== "PRIVMSG") return null;
@@ -140,19 +188,24 @@ export class LiveChatTwitch implements LiveChat {
         let prioritized = false;
 
         let is_highlighted = /msg-id=highlighted-message;/g.test(metadata);
-        if (is_highlighted === true
-        && wAIfu.state!.config.behaviour.always_read_highlighted.value === true)
+        if (
+            is_highlighted === true &&
+            wAIfu.state!.config.live_chat.always_read_highlighted.value === true
+        )
             prioritized = true;
 
         // Fetch displayed user name from metadata
         let reg_name_result = /(?:display-name=)(.*?)(?:;)/g.exec(metadata);
-        if (reg_name_result !== null)
-            user = reg_name_result[1]!;
+        if (reg_name_result !== null) user = reg_name_result[1]!;
 
         // If is in blacklist, skip
-        if (wAIfu.state!.config.moderation.blacklisted_chatters.value.indexOf(user.toLowerCase()) !== -1)
-            return null
-        
+        if (
+            wAIfu.state!.config.moderation.blacklisted_chatters.value.indexOf(
+                user.toLowerCase()
+            ) !== -1
+        )
+            return null;
+
         if (prioritized === false && is_highlighted === false) {
             // If message contains a mention, skip
             let contains_mention = /@\w+/g.test(content);
@@ -164,19 +217,22 @@ export class LiveChatTwitch implements LiveChat {
         }
 
         // Basic sanitization to prevent bypass of bad words filter
-        if (wAIfu.state?.config.moderation.remove_non_ascii_from_chat.value === true)
-            content = content.replaceAll(/[^a-zA-Z0-9 \.\,\?\!\+\-\%\*\=\/\_\:\;\$\€\@\<\>\(\)]/g, '');
+        if (
+            wAIfu.state?.config.moderation.remove_non_ascii_from_chat.value ===
+            true
+        )
+            content = removeNonAsciiSymbols(content);
 
         return {
             msg: {
                 message: {
                     sender: user,
                     content: content,
-                    trusted: false
+                    trusted: false,
                 },
-                metadata: metadata
+                metadata: metadata,
             },
-            prioritized: prioritized
-        }
+            prioritized: prioritized,
+        };
     }
 }

@@ -1,11 +1,17 @@
 import { IO } from "../io/io";
 import { isSpamMessage } from "../moderation/check_for_spam";
 
+/**
+ * Returns a modified verrsion of the string to hopefully reduce the likelyhood
+ * of triggering a freakout when using the NovelAI models.
+ * @param text LLM response
+ * @returns modified response
+ */
 export function preventFreakout(text: string): string {
     let ret_val = text;
     let modified = false;
     
-    const regex: RegExp = /(.)\1{2,}/g;
+    const regex: RegExp = /(.)\1{3,}/g;
     let results = text.matchAll(regex);
 
     for (let match of results) {

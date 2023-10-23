@@ -1,35 +1,52 @@
-import * as fs from 'fs';
-import * as cproc from 'child_process'
+import * as fs from "fs";
+import * as cproc from "child_process";
 
 import { Plugin, PluginFile } from "./plugin";
-import { isOfClassDeep } from '../types/Helper';
-import { IO } from '../io/io';
+import { isOfClass } from "../types/Helper";
+import { IO } from "../io/io";
 
 export function loadPlugins(): Plugin[] {
-
-    const PLUGINS_PATH = process.cwd() + '/userdata/plugins/';
+    const PLUGINS_PATH = process.cwd() + "/userdata/plugins/";
     let plugins: Plugin[] = [];
 
     let folders = fs.readdirSync(PLUGINS_PATH);
     iterate_plugin: for (let plugin_folder of folders) {
-        if (plugin_folder.includes('.') === true) continue;
+        if (plugin_folder.includes(".") === true) continue;
 
         let files = fs.readdirSync(PLUGINS_PATH + plugin_folder);
-        
-        if(files.find(v => v === 'plugin.json') === undefined) {
-            IO.warn('ERROR: Plugin in folder', plugin_folder, 'does not define the file plugin.json');
+
+        if (files.find((v) => v === "plugin.json") === undefined) {
+            IO.warn(
+                "ERROR: Plugin in folder",
+                plugin_folder,
+                "does not define the file plugin.json"
+            );
             continue;
         }
 
-        let raw_plugin_obj = JSON.parse(fs.readFileSync(PLUGINS_PATH + plugin_folder + '/plugin.json', { encoding: 'utf8' }));
-        if (isOfClassDeep(raw_plugin_obj, new PluginFile(), { print: true, obj_name: 'plugin.json', add_missing_fields: false }) === false) {
-            IO.warn('ERROR: plugin.json did not pass the sanity test.');
+        let raw_plugin_obj = JSON.parse(
+            fs.readFileSync(PLUGINS_PATH + plugin_folder + "/plugin.json", {
+                encoding: "utf8",
+            })
+        );
+        if (
+            isOfClass(raw_plugin_obj, new PluginFile(), {
+                print: true,
+                obj_name: "plugin.json",
+                add_missing_fields: false,
+            }) === false
+        ) {
+            IO.warn("ERROR: plugin.json did not pass the sanity test.");
             continue;
         }
         let plugin_def: PluginFile = raw_plugin_obj as PluginFile;
 
-        if(files.find(v => v === 'index.js') === undefined) {
-            IO.warn('ERROR: Plugin', plugin_def.name, 'does not define the file index.js');
+        if (files.find((v) => v === "index.js") === undefined) {
+            IO.warn(
+                "ERROR: Plugin",
+                plugin_def.name,
+                "does not define the file index.js"
+            );
             continue;
         }
 
@@ -38,28 +55,47 @@ export function loadPlugins(): Plugin[] {
 
         if (plugin.definition.activated === false) continue iterate_plugin;
 
-        IO.print('Loading plugin:', plugin_def.name);
+        IO.print("Loading plugin:", plugin_def.name);
 
-        iterate_deps: for(let [key, val] of Object.entries(plugin.definition['npm-dependencies'])) {
+        iterate_deps: for (let [key, val] of Object.entries(
+            plugin.definition["npm-dependencies"]
+        )) {
             try {
                 // Check for error on initialization
                 // @ts-ignore
                 let dependency = require(key);
                 dependency = undefined;
             } catch {
-                let package_name = key.replaceAll(/[^a-zA-Z0-9\-\_\@\\\/\.\:]/g, '');
-                let package_version = String(val).replaceAll(/[^a-zA-Z0-9\-\_\@\\\/\.\:\^\~]/g, '');
+                let package_name = key.replaceAll(
+                    /[^a-zA-Z0-9\-\_\@\\\/\.\:]/g,
+                    ""
+                );
+                let package_version = String(val).replaceAll(
+                    /[^a-zA-Z0-9\-\_\@\\\/\.\:\^\~]/g,
+                    ""
+                );
                 let command = `npm install ${package_name}@${package_version} --save-dev`;
                 if (command.length > 128) {
-                    IO.error('CRITICAL: Prevented plugin', plugin_def.name, 'in folder', PLUGINS_PATH + plugin_folder, 'from executing command due to its abnormal length.');
+                    IO.error(
+                        "CRITICAL: Prevented plugin",
+                        plugin_def.name,
+                        "in folder",
+                        PLUGINS_PATH + plugin_folder,
+                        "from executing command due to its abnormal length."
+                    );
                     continue iterate_plugin;
                 }
-                IO.print('Installing plugin', plugin_def.name, 'dependency', package_name);
+                IO.print(
+                    "Installing plugin",
+                    plugin_def.name,
+                    "dependency",
+                    package_name
+                );
                 cproc.execSync(command, { cwd: process.cwd() });
             }
         }
 
-        plugin.code = require(PLUGINS_PATH + plugin_folder + '/index');
+        plugin.code = require(PLUGINS_PATH + plugin_folder + "/index");
         plugin.onLoad();
 
         plugins.push(plugin);

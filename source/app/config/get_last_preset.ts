@@ -1,6 +1,11 @@
 import * as fs from "fs";
 
-
+/**
+ * Get name (file name) of selected preset or first config file name available
+ * if preset could not be found
+ * @param available_presets 
+ * @returns config file name
+ */
 export function getPreset_impl(available_presets: string[]): string|null {
 
     const CONFIG_PATH = process.cwd() + "/userdata/config";

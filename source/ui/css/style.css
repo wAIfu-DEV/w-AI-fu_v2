@@ -383,7 +383,6 @@ spacer {
     border-radius: 1.5rem;
     cursor: pointer;
     text-align: center;
-    flex-grow: 1;
     padding: 0.75rem;
     border: solid 2px var(--border-color);
 }
@@ -722,6 +721,10 @@ tmpl-vts-emotes-list-input {
     flex-grow: 25;
 }
 
+tmpl-vts-keywords-list-input {
+    flex-grow: 25;
+}
+
 tmpl-contextual-memories-list-input {
     flex-grow: 15;
 }
@@ -845,4 +848,23 @@ dialog > div {
 #update-version-string {
     color: #0080ff;
     cursor: pointer;
+}
+
+inline {
+    display: flex;
+    width: -webkit-fill-available;
+    align-items: center;
+}
+
+.test-btn {
+    padding: 0.65rem 0.75rem 0.35rem 0.75rem;
+    border-radius: 1rem;
+    border: solid 2px var(--border-color);
+}
+
+.test-btn-small {
+    padding: 0.35rem 0.55rem 0.25rem 0.55rem;
+    border-radius: 1rem;
+    border: solid 2px var(--border-color);
+    font-size: 0.5rem;
 }

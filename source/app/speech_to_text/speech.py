@@ -1,11 +1,9 @@
 import speech_recognition as sr
-import os.path
 import sys
 from pynput.keyboard import Key, Listener
 import pyaudio
 import wave
 import threading
-import platform
 
 from websockets.sync.client import connect
 
@@ -34,8 +32,15 @@ try:
 except:
     api_key = ""
 
+stt_language = ""
+try:
+    stt_language = sys.argv[5]
+except:
+    stt_language = "en-US"
+
 ws = None
 paudio = None
+
 
 def main():
     global use_ptt, index, ws, paudio
@@ -46,22 +51,21 @@ def main():
             paudio = pyaudio.PyAudio()
             print("Using Push-To-Talk.", file=sys.stdout)
             sys.stdout.flush()
-            #t = threading.Thread(target=push_to_talk)
-            #t.start()
             push_to_talk()
         else:
             print("Using speech recognition.", file=sys.stdout)
             sys.stdout.flush()
             speech_recognition()
 
+
 def ptt_press(key: Key):
     global ptt_should_record, released
     if key == Key.ctrl_r and released:
         ptt_should_record = True
         released = False
-        #ptt_record_audio()
         t = threading.Thread(target=ptt_record_audio)
         t.start()
+
 
 def ptt_release(key: Key):
     global ptt_should_record, released
@@ -69,12 +73,14 @@ def ptt_release(key: Key):
         ptt_should_record = False
         released = True
 
+
 def push_to_talk():
     with Listener(
         on_press=ptt_press,
         on_release=ptt_release) as listener:
         listener.join()
         print("PTT Listener has joined.", file=sys.stderr)
+
 
 def ptt_record_audio():
     global ptt_should_record, paudio, index
@@ -116,12 +122,14 @@ def ptt_record_audio():
     wf.close()
     recognize_file()
 
+
 def recognize_file():
     global ws, provider, api_key
     recognizer = sr.Recognizer()
     with sr.AudioFile("recorded.wav") as source:
         audio = recognizer.listen(source)
         recognize_audio(audio, recognizer, throw=False)
+
 
 def speech_recognition():
     global index, ws, provider, api_key
@@ -140,6 +148,7 @@ def speech_recognition():
             continue
         except:
             continue
+
 
 def recognize_audio(audio: sr.AudioData, recognizer: sr.Recognizer, throw: bool):
     global provider, ws, api_key
@@ -166,6 +175,7 @@ def recognize_audio(audio: sr.AudioData, recognizer: sr.Recognizer, throw: bool)
         print("Could not contact audio recognition API.", file=sys.stderr)
         text = '...'
     ws.send(text)
+
 
 if __name__ == "__main__":
     main()

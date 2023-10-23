@@ -6,6 +6,7 @@ export class LiveChatNone implements LiveChat {
     async initialize(): Promise<void> {}
     async free(): Promise<void> {}
     nextMessage(): Result<Message, null> {
-        return new Result(false,new Message(),null);
+        return new Result(false, new Message(), null);
     }
+    send(_: string): void {}
 }

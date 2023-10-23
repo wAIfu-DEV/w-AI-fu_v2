@@ -28,13 +28,15 @@ const cproc = __importStar(require("child_process"));
 const Waifu_1 = require("../types/Waifu");
 const io_1 = require("../io/io");
 function getDevices() {
-    let output = cproc.spawnSync('python', ['audio_devices.py'], {
-        cwd: process.cwd() + '/source/app/devices/',
-        shell: false
-    })
-        .stdout;
-    io_1.IO.debug('DEVICES:', output.toString('utf8'));
-    return JSON.parse(output.toString('utf8'));
+    let proc = cproc.spawnSync(Waifu_1.ENV.PYTHON_PATH, ["audio_devices.py"], {
+        cwd: process.cwd() + "/source/app/devices/",
+        shell: false,
+    });
+    let err = proc.stderr;
+    if (err !== null)
+        io_1.IO.error(err.toString("utf8"));
+    let output = proc.stdout;
+    return JSON.parse(output.toString("utf8"));
 }
 exports.getDevices = getDevices;
 function getDeviceIndex(device_name) {

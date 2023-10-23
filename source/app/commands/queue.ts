@@ -9,8 +9,8 @@ export class CommandQueue {
 
     consume(): string {
         return (this.#data.length > 0)
-               ? this.#data.shift()!
-               : '';
+            ? this.#data.shift()!
+            : '';
     }
 
     pushBack(item: string): void {

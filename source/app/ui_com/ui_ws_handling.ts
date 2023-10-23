@@ -12,18 +12,33 @@ import { IO } from "../io/io";
 import { startUpdate } from "../update/start_update";
 import { writePreset } from "../config/write_preset";
 
-export function handleUImessage_impl(ui: UserInterface ,message: string) {
+type Message = { text: string };
+
+enum PREFIX_TYPE {
+    COMMAND = "COMMAND",
+    MESSAGE = "MESSAGE",
+    CONFIG = "CONFIG",
+    CHARACTER = "CHARACTER",
+    AUTH = "AUTH",
+    INTERRUPT = "INTERRUPT",
+    RESET = "RESET",
+    UPDATE = "UPDATE",
+    PRESET = "PRESET",
+    NEW_PRESET = "NEW_PRESET"
+}
+
+export function handleUImessage_impl(ui: UserInterface, message: string) {
 
     const split_message: string[] = message.split(' ');
-    
-    if (split_message.length <= 0 ) {
+
+    if (split_message.length <= 0) {
         IO.warn('ERROR: Received message without prefix from UI WebSocket.');
         return;
     }
 
     const prefix: string = (split_message[0] === undefined)
-                            ? ''
-                            : split_message[0];
+        ? ''
+        : split_message[0];
 
     let json_object: unknown;
     if (split_message.length > 1)
@@ -35,9 +50,22 @@ export function handleUImessage_impl(ui: UserInterface ,message: string) {
     else
         IO.debug('RECEIVED FROM UI: AUTH');
 
-    switch(prefix) {
+    switch (prefix) {
         case PREFIX_TYPE.MESSAGE: {
-            wAIfu.state!.command_queue.pushBack((json_object as any)["text"]);
+            let type_match = isOfClassDeep<Message>(json_object, { text: "" }, { obj_name: "message", add_missing_fields: false, print: true });
+            if (type_match === false) {
+                IO.warn('ERROR: Incoming input message from UI did not pass sanity test.');
+                return;
+            }
+            wAIfu.state!.command_queue.pushBack((json_object as Message).text);
+        } break;
+        case PREFIX_TYPE.COMMAND: {
+            let type_match = isOfClassDeep<Message>(json_object, { text: "" }, { obj_name: "message", add_missing_fields: false, print: true });
+            if (type_match === false) {
+                IO.warn('ERROR: Incoming input message from UI did not pass sanity test.');
+                return;
+            }
+            wAIfu.state!.command_queue.pushFront((json_object as Message).text);
         } break;
         case PREFIX_TYPE.CHARACTER: {
             class CharWrapper {
@@ -84,6 +112,10 @@ export function handleUImessage_impl(ui: UserInterface ,message: string) {
         } break;
         case PREFIX_TYPE.INTERRUPT: {
             wAIfu.dependencies?.tts.interrupt();
+
+            for (let plugin of wAIfu.plugins)
+                plugin.onInterrupt();
+
             IO.print('Interrupted speech.');
         } break;
         case PREFIX_TYPE.RESET: {
@@ -104,7 +136,7 @@ export function handleUImessage_impl(ui: UserInterface ,message: string) {
         case PREFIX_TYPE.NEW_PRESET: {
             if (wAIfu.state === undefined) return;
             let new_preset_name = (json_object as { name: string }).name + '.json';
-            writeConfig(wAIfu.state.config, new_preset_name);
+            writeConfig(new Config(), new_preset_name);
             wAIfu.state.current_preset = new_preset_name;
             writePreset(wAIfu.state.current_preset);
             wAIfu.state.presets.push(wAIfu.state.current_preset);
@@ -114,16 +146,4 @@ export function handleUImessage_impl(ui: UserInterface ,message: string) {
             IO.warn('ERROR: Received unhandled prefix from UI WebSocket.');
             break;
     }
-}
-
-enum PREFIX_TYPE {
-    MESSAGE = "MESSAGE",
-    CONFIG = "CONFIG",
-    CHARACTER = "CHARACTER",
-    AUTH = "AUTH",
-    INTERRUPT = "INTERRUPT",
-    RESET = "RESET",
-    UPDATE = "UPDATE",
-    PRESET = "PRESET",
-    NEW_PRESET = "NEW_PRESET"
 }

@@ -1,6 +1,46 @@
 import * as fs from 'fs';
 import { isOfClass, addMissingFields } from "../types/Helper";
 import { IO } from '../io/io';
+import { Result } from '../types/Result';
+
+enum READPARSE_ERROR {
+    NONE = "NONE",
+    READ_ERROR = "READ_ERROR",
+    PARSE_ERROR = "PARSE_ERROR",
+}
+
+export function readParseJSON(path: string): Result<unknown, READPARSE_ERROR> {
+
+    let raw_data: string;
+    try {
+        raw_data = fs.readFileSync(path, { encoding: 'utf8' });
+    } catch (error) {
+        IO.warn('ERROR: Could not read file', path);
+        return {
+            success: true,
+            value: {} as unknown,
+            error: READPARSE_ERROR.READ_ERROR
+        };
+    }
+
+    let json_obj: unknown;
+    try {
+        json_obj = JSON.parse(raw_data);
+    } catch (error) {
+        IO.warn('ERROR: Could not parse file', path);
+        return {
+            success: true,
+            value: {} as unknown,
+            error: READPARSE_ERROR.PARSE_ERROR
+        };
+    }
+
+    return {
+        success: true,
+        value: json_obj,
+        error: READPARSE_ERROR.NONE
+    };
+}
 
 /**
  * Reads the file, handles errors and returns a parsed object of type T 

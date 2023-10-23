@@ -4,5 +4,6 @@ import { Result } from "../types/Result";
 export interface LiveChat {
     initialize(): Promise<void>;
     free(): Promise<void>;
-    nextMessage(): Result<Message,null>;
+    nextMessage(): Result<Message, null>;
+    send(message: string): void;
 }

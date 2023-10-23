@@ -29,6 +29,7 @@ const input_interface_1 = require("./input_interface");
 const Waifu_1 = require("../types/Waifu");
 const Result_1 = require("../types/Result");
 const Message_1 = require("../types/Message");
+const io_1 = require("../io/io");
 class InputSystemText {
     #cli_input_interface;
     #interrupt_next;
@@ -38,9 +39,10 @@ class InputSystemText {
     }
     async initialize() {
         this.#cli_input_interface.removeAllListeners();
-        this.#cli_input_interface.on('line', (input) => {
+        this.#cli_input_interface.on("line", (input) => {
             Waifu_1.wAIfu.state.command_queue.pushBack(input);
         });
+        io_1.IO.debug("Loaded InputSystemText.");
         return;
     }
     async free() {
@@ -59,21 +61,20 @@ class InputSystemText {
                 resolved = true;
                 resolve(new Result_1.Result(false, new Message_1.Message(), input_interface_1.REJECT_REASON.TIMEOUT));
                 return;
-            }, Waifu_1.wAIfu.state.config.behaviour.read_chat_after_x_seconds.value * 1000);
+            }, Waifu_1.wAIfu.state.config.live_chat.read_chat_after_x_seconds.value * 1000);
             const check_queue = () => {
                 if (this.#interrupt_next === true) {
                     this.#interrupt_next = false;
                     resolve(new Result_1.Result(false, new Message_1.Message(), input_interface_1.REJECT_REASON.INTERRUPT));
                     return;
                 }
-                ;
                 if (resolved === true)
                     return;
                 if (Waifu_1.wAIfu.state.command_queue.notEmpty()) {
                     let message = {
-                        "sender": Waifu_1.wAIfu.state.config._.user_name.value,
-                        "content": Waifu_1.wAIfu.state.command_queue.consume(),
-                        "trusted": true
+                        sender: Waifu_1.wAIfu.state.config._.user_name.value,
+                        content: Waifu_1.wAIfu.state.command_queue.consume(),
+                        trusted: true,
                     };
                     resolve(new Result_1.Result(true, message, input_interface_1.REJECT_REASON.NONE));
                     return;

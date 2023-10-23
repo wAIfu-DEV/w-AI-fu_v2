@@ -42,39 +42,48 @@ class InputSystemVoice {
     constructor() {
         this.#cli_input_interface = readline.createInterface(process.stdin, process.stdout);
         this.#interrupt_next = false;
-        let use_ptt = (Waifu_1.wAIfu.state.config.behaviour.push_to_talk.value == true) ? '1' : '0';
+        let use_ptt = Waifu_1.wAIfu.state.config.speech_to_text.push_to_talk.value == true
+            ? "1"
+            : "0";
         let device = (0, devices_1.getDeviceIndex)(Waifu_1.wAIfu.state.config.devices.voice_input_device.value).toString();
-        this.#child_process = cproc.spawn('python', [
-            'speech.py',
+        this.#child_process = cproc.spawn(Waifu_1.ENV.PYTHON_PATH, [
+            "speech.py",
             use_ptt,
             device,
-            Waifu_1.wAIfu.state.config.providers.stt_provider.value,
-            Waifu_1.wAIfu.state.auth.openai.token
+            Waifu_1.wAIfu.state.config.speech_to_text.stt_provider.value,
+            Waifu_1.wAIfu.state.auth.openai.token,
+            Waifu_1.wAIfu.state.config.speech_to_text.stt_language.value,
         ], {
             cwd: `${process.cwd()}/source/app/speech_to_text/`,
-            detached: false, shell: false
+            detached: false,
+            shell: false,
         });
-        this.#child_process.stderr?.on('data', (data) => {
+        this.#child_process.stderr?.on("data", (data) => {
             io_1.IO.warn(data.toString());
         });
-        this.#child_process.stdout?.on('data', (data) => {
+        this.#child_process.stdout?.on("data", (data) => {
             io_1.IO.print(data.toString());
         });
-        this.#websocket_server = new ws_1.WebSocketServer({ host: '127.0.0.1', port: 8711 });
+        this.#websocket_server = new ws_1.WebSocketServer({
+            host: "127.0.0.1",
+            port: 8711,
+        });
+        io_1.IO.debug("Loaded InputSystemVoice.");
     }
     async initialize() {
         this.#cli_input_interface.removeAllListeners();
-        this.#cli_input_interface.on('line', (input) => {
+        this.#cli_input_interface.on("line", (input) => {
             Waifu_1.wAIfu.state.command_queue.pushBack(input);
         });
         return new Promise((resolve) => {
-            this.#websocket_server.on('connection', (socket) => {
+            this.#websocket_server.on("connection", (socket) => {
                 this.#websocket = socket;
-                this.#websocket.on('error', (err) => io_1.IO.print(err));
-                this.#websocket.on('message', (data) => {
-                    Waifu_1.wAIfu.state.command_queue.pushFront(data.toString('utf8'));
+                this.#websocket.on("error", (err) => io_1.IO.print(err));
+                this.#websocket.on("message", (data) => {
+                    Waifu_1.wAIfu.dependencies?.tts.interrupt();
+                    Waifu_1.wAIfu.state.command_queue.pushFront(data.toString("utf8"));
                 });
-                this.#websocket.send('');
+                this.#websocket.send("");
                 resolve();
             });
         });
@@ -82,8 +91,8 @@ class InputSystemVoice {
     async free() {
         this.#cli_input_interface.removeAllListeners();
         this.#cli_input_interface.close();
-        return new Promise(resolve => {
-            this.#child_process.on('close', () => {
+        return new Promise((resolve) => {
+            this.#child_process.on("close", () => {
                 this.#child_process.removeAllListeners();
                 this.#websocket_server.removeAllListeners();
                 this.#websocket.removeAllListeners();
@@ -94,7 +103,6 @@ class InputSystemVoice {
                         resolve();
                         return;
                     }
-                    ;
                     setTimeout(el, 100);
                 };
                 setTimeout(el, 100);
@@ -114,21 +122,20 @@ class InputSystemVoice {
                 resolved = true;
                 resolve(new Result_1.Result(false, new Message_1.Message(), input_interface_1.REJECT_REASON.TIMEOUT));
                 return;
-            }, Waifu_1.wAIfu.state.config.behaviour.read_chat_after_x_seconds.value * 1000);
+            }, Waifu_1.wAIfu.state.config.live_chat.read_chat_after_x_seconds.value * 1000);
             const check_queue = () => {
                 if (this.#interrupt_next === true) {
                     this.#interrupt_next = false;
                     resolve(new Result_1.Result(false, new Message_1.Message(), input_interface_1.REJECT_REASON.INTERRUPT));
                     return;
                 }
-                ;
                 if (resolved === true)
                     return;
                 if (Waifu_1.wAIfu.state.command_queue.notEmpty()) {
                     let message = {
-                        "sender": Waifu_1.wAIfu.state.config._.user_name.value,
-                        "content": Waifu_1.wAIfu.state.command_queue.consume(),
-                        "trusted": true
+                        sender: Waifu_1.wAIfu.state.config._.user_name.value,
+                        content: Waifu_1.wAIfu.state.command_queue.consume(),
+                        trusted: true,
                     };
                     resolve(new Result_1.Result(true, message, input_interface_1.REJECT_REASON.NONE));
                     return;

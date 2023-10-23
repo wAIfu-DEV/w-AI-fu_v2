@@ -4,16 +4,17 @@ import { Result } from "../types/Result";
 import { LLM_GEN_ERRORS, LargeLanguageModel, LlmGenerationSettings } from "./llm_interface";
 import { wAIfu } from '../types/Waifu';
 import { IO } from '../io/io';
+import { getCurrentCharacter } from '../characters/characters';
 
 export class LargeLanguageModelCharacterAI implements LargeLanguageModel {
     #child_process: cproc.ChildProcess;
 
     constructor() {
-        this.#child_process = cproc.spawn('python', [ 'characterai_llm.py' ], { 
+        this.#child_process = cproc.spawn('python', ['characterai_llm.py'], {
             cwd: process.cwd() + '/source/app/characterai_api/',
             env: {
                 CAI_TOKEN: wAIfu.state!.auth["characterai"]["token"],
-                CHARACTER: JSON.stringify(wAIfu.state!.characters[wAIfu.state!.config._.character_name.value])
+                CHARACTER: JSON.stringify(getCurrentCharacter())
             },
             detached: false, shell: false
         });
@@ -24,13 +25,13 @@ export class LargeLanguageModelCharacterAI implements LargeLanguageModel {
             IO.print(data.toString());
         });
     }
-    
+
     async initialize(): Promise<void> {
-        
+
     }
 
     async free(): Promise<void> {
-        
+
     }
 
     // @ts-ignore

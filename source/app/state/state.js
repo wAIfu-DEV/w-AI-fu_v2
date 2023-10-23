@@ -24,6 +24,7 @@ class AppState {
         this.config = config_1.Config.importFromFile(this.current_preset);
         this.auth = auth_1.Auth.importFromFile();
         this.characters = (0, characters_1.retreiveCharacters)();
+        this.devices = {};
         this.memory = new memory_1.Memory();
         this.bad_words = (0, decode_bad_words_1.getBadWords)();
     }

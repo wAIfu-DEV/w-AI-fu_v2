@@ -23,10 +23,48 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.readParseAs = void 0;
+exports.readParseAs = exports.readParseJSON = void 0;
 const fs = __importStar(require("fs"));
 const Helper_1 = require("../types/Helper");
 const io_1 = require("../io/io");
+var READPARSE_ERROR;
+(function (READPARSE_ERROR) {
+    READPARSE_ERROR["NONE"] = "NONE";
+    READPARSE_ERROR["READ_ERROR"] = "READ_ERROR";
+    READPARSE_ERROR["PARSE_ERROR"] = "PARSE_ERROR";
+})(READPARSE_ERROR || (READPARSE_ERROR = {}));
+function readParseJSON(path) {
+    let raw_data;
+    try {
+        raw_data = fs.readFileSync(path, { encoding: 'utf8' });
+    }
+    catch (error) {
+        io_1.IO.warn('ERROR: Could not read file', path);
+        return {
+            success: true,
+            value: {},
+            error: READPARSE_ERROR.READ_ERROR
+        };
+    }
+    let json_obj;
+    try {
+        json_obj = JSON.parse(raw_data);
+    }
+    catch (error) {
+        io_1.IO.warn('ERROR: Could not parse file', path);
+        return {
+            success: true,
+            value: {},
+            error: READPARSE_ERROR.PARSE_ERROR
+        };
+    }
+    return {
+        success: true,
+        value: json_obj,
+        error: READPARSE_ERROR.NONE
+    };
+}
+exports.readParseJSON = readParseJSON;
 function readParseAs(path, sentinel_value) {
     let data;
     try {

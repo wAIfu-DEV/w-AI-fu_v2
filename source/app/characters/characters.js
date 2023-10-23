@@ -23,30 +23,43 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.writeCharacter = exports.retreiveCharacters = void 0;
+exports.writeCharacter = exports.retreiveCharacters = exports.getCurrentCharacter = exports.getCharByFileName = void 0;
 const fs = __importStar(require("fs"));
+const character_1 = require("./character");
 const io_1 = require("../io/io");
+const Waifu_1 = require("../types/Waifu");
+const file_system_1 = require("../file_system/file_system");
+const Helper_1 = require("../types/Helper");
+function getCharByFileName(file_name) {
+    let character = Waifu_1.wAIfu.state.characters[file_name];
+    if (character === undefined) {
+        io_1.IO.warn('ERROR: Could not access character data for:', file_name, 'Please retry with another character.');
+        return new character_1.Character();
+    }
+    return character;
+}
+exports.getCharByFileName = getCharByFileName;
+function getCurrentCharacter() {
+    return getCharByFileName(Waifu_1.wAIfu.state.config._.character_name.value);
+}
+exports.getCurrentCharacter = getCurrentCharacter;
 function retreiveCharacters() {
     let CHARA_PATH = process.cwd() + '/userdata/characters/';
     let result = {};
     let files = fs.readdirSync(CHARA_PATH, { recursive: false, encoding: 'utf8' });
     for (let f of files) {
         let name_no_extension = f.replaceAll(/\..*/g, '');
-        let data;
-        try {
-            data = fs.readFileSync(CHARA_PATH + f, { encoding: 'utf8' });
+        const PATH = CHARA_PATH + f;
+        let parse_result = (0, file_system_1.readParseJSON)(PATH);
+        if (parse_result.success === false) {
+            io_1.IO.warn('Could not import character file', PATH);
+            continue;
         }
-        catch (error) {
-            io_1.IO.warn('ERROR: Could not read file', CHARA_PATH + f);
-            return;
-        }
-        let parsed_obj;
-        try {
-            parsed_obj = JSON.parse(data);
-        }
-        catch (error) {
-            io_1.IO.warn('ERROR: Could not parse file', CHARA_PATH + f);
-            return;
+        let parsed_obj = parse_result.value;
+        let type_match = (0, Helper_1.isOfClassDeep)(parsed_obj, new character_1.Character(), { obj_name: 'character', add_missing_fields: true, print: true });
+        if (type_match === false) {
+            io_1.IO.warn('ERROR: Character file', PATH, 'failed the sanity check.');
+            continue;
         }
         result[name_no_extension] = parsed_obj;
     }

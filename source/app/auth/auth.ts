@@ -1,24 +1,31 @@
 import { importAuthFromFile_impl } from "./import_auth";
 
+/**
+ * Class mirroring the structure of the `auth.json` file from `userdata/auth/`
+ */
 export class Auth {
     "novelai" = {
-        "mail": "",
-        "password": ""
+        mail: "",
+        password: "",
     };
     "openai" = {
-        "token": ""
+        token: "",
     };
     "characterai" = {
-        "token": ""
-    }
+        token: "",
+    };
     "twitch" = {
-        "channel_name": "",
-        "oauth_token": "",
-        "twitchapp_clientid": "",
-        "twitchapp_secret": ""
+        channel_name: "",
+        oauth_token: "",
+        twitchapp_clientid: "",
+        twitchapp_secret: "",
+    };
+    "azure" = {
+        token: "",
+        region: "",
     };
 
     static AUTH_PATH = process.cwd() + "/userdata/auth/auth.json";
-
-    static importFromFile: (() => Auth) = importAuthFromFile_impl;
+    /** @see `./import_auth.ts` */
+    static importFromFile: () => Auth = importAuthFromFile_impl;
 }

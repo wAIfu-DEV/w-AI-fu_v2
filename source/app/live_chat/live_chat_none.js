@@ -9,5 +9,6 @@ class LiveChatNone {
     nextMessage() {
         return new Result_1.Result(false, new Message_1.Message(), null);
     }
+    send(_) { }
 }
 exports.LiveChatNone = LiveChatNone;

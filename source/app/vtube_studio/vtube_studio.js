@@ -11,8 +11,8 @@ const io_1 = require("../io/io");
 class VtubeStudioAPI {
     #PORT = `ws://0.0.0.0:${Waifu_1.wAIfu.state.config.vts.api_port.value.toString()}`;
     #websocket = new ws_1.default(null);
-    #authToken = '';
-    current_emotion = '';
+    #authToken = "";
+    current_emotion = "";
     constructor() {
         this.#websocket = new ws_1.default(this.#PORT);
         this.#messageHandler();
@@ -22,39 +22,43 @@ class VtubeStudioAPI {
         this.#messageHandler();
     }
     #messageHandler() {
-        this.#websocket.on('error', (err) => {
-            io_1.IO.debug('ERROR: VtubeStudio API encountered an error.');
+        this.#websocket.on("error", (err) => {
+            if (err.code === "ECONNREFUSED")
+                return;
+            io_1.IO.debug("ERROR: VtubeStudio API encountered an error.");
             io_1.IO.debug(err);
         });
-        this.#websocket.on('close', () => {
-            io_1.IO.debug('Lost connection to the VtubeStudio API. Will try again shortly.');
+        this.#websocket.on("close", () => {
             setTimeout(() => this.reconnect(), 7_500);
         });
-        this.#websocket.on('message', (data) => {
-            const message = JSON.parse(data.toString('utf-8'));
+        this.#websocket.on("message", (data) => {
+            const message = JSON.parse(data.toString("utf-8"));
             if (message === undefined) {
-                io_1.IO.warn('ERROR: VtubeStudio returned undefined.');
+                io_1.IO.warn("ERROR: VtubeStudio returned undefined.");
                 return;
             }
             if (message["messageType"] === undefined) {
-                io_1.IO.warn('ERROR: undefined messageType in VtubeStudio response.');
+                io_1.IO.warn("ERROR: undefined messageType in VtubeStudio response.");
                 return;
             }
             switch (message["messageType"]) {
                 case MESSAGE_TYPE.AUTH_SUCCESS:
                     {
-                        this.#authToken = message["data"]["authenticationToken"];
-                        Waifu_1.wAIfu.state.config._.vts_session_token.value = this.#authToken;
+                        this.#authToken =
+                            message["data"]["authenticationToken"];
+                        Waifu_1.wAIfu.state.config._.vts_session_token.value =
+                            this.#authToken;
                         (0, export_config_1.writeConfig)(Waifu_1.wAIfu.state.config, Waifu_1.wAIfu.state.current_preset);
-                        Waifu_1.wAIfu.dependencies?.ui?.send('CONFIG', Waifu_1.wAIfu.state.config);
-                        Waifu_1.wAIfu.dependencies?.ui?.send('DEVICES', Waifu_1.wAIfu.state.devices);
+                        Waifu_1.wAIfu.dependencies?.ui?.send("CONFIG", Waifu_1.wAIfu.state.config);
+                        Waifu_1.wAIfu.dependencies?.ui?.send("DEVICES", Waifu_1.wAIfu.state.devices);
                         this.#authenticateSession();
                     }
                     break;
                 case MESSAGE_TYPE.SESSION_AUTH_RESPONSE:
                     {
                         if (message["data"]["authenticated"] !== true)
-                            io_1.IO.warn('ERROR: Could not authenticate current VtubeStudio API session.\nReason:' + message["data"]["reason"]);
+                            io_1.IO.warn("ERROR: Could not authenticate current VtubeStudio API session.\nReason:" +
+                                message["data"]["reason"]);
                         this.#initialize();
                     }
                     break;
@@ -62,11 +66,12 @@ class VtubeStudioAPI {
                     break;
                 case MESSAGE_TYPE.ERROR:
                     {
-                        io_1.IO.warn('ERROR: VtubeStudio API sent: ' + message["data"]["message"]);
+                        io_1.IO.warn("ERROR: VtubeStudio API sent: " +
+                            message["data"]["message"]);
                         switch (message["data"]["errorID"]) {
                             case MSG_ERR_TYPE.USER_AUTH_REFUSAL:
                                 {
-                                    io_1.IO.warn('ERROR: Could not authenticate with VtubeStudio due to user refusal.');
+                                    io_1.IO.warn("ERROR: Could not authenticate with VtubeStudio due to user refusal.");
                                 }
                                 break;
                             default:
@@ -75,14 +80,14 @@ class VtubeStudioAPI {
                     }
                     break;
                 default:
-                    io_1.IO.warn('ERROR: Received unhandled message from VtubeStudio API.');
+                    io_1.IO.warn("ERROR: Received unhandled message from VtubeStudio API.");
                     io_1.IO.debug(message);
                     break;
             }
         });
-        this.#websocket.on('ping', () => this.#websocket.pong());
-        this.#websocket.on('open', () => {
-            if (Waifu_1.wAIfu.state.config._.vts_session_token.value === '')
+        this.#websocket.on("ping", () => this.#websocket.pong());
+        this.#websocket.on("open", () => {
+            if (Waifu_1.wAIfu.state.config._.vts_session_token.value === "")
                 this.#authenticate();
             else {
                 this.#authToken = Waifu_1.wAIfu.state.config._.vts_session_token.value;
@@ -95,27 +100,27 @@ class VtubeStudioAPI {
     }
     #authenticate() {
         this.#websocket.send(JSON.stringify({
-            "apiName": "VTubeStudioPublicAPI",
-            "apiVersion": "1.0",
-            "requestID": "x",
-            "messageType": "AuthenticationTokenRequest",
-            "data": {
-                "pluginName": "w-AI-fu",
-                "pluginDeveloper": "w-AI-fu_DEV"
-            }
+            apiName: "VTubeStudioPublicAPI",
+            apiVersion: "1.0",
+            requestID: "x",
+            messageType: "AuthenticationTokenRequest",
+            data: {
+                pluginName: "w-AI-fu",
+                pluginDeveloper: "w-AI-fu_DEV",
+            },
         }));
     }
     #authenticateSession() {
         this.#websocket.send(JSON.stringify({
-            "apiName": "VTubeStudioPublicAPI",
-            "apiVersion": "1.0",
-            "requestID": "x",
-            "messageType": "AuthenticationRequest",
-            "data": {
-                "pluginName": "w-AI-fu",
-                "pluginDeveloper": "w-AI-fu_DEV",
-                "authenticationToken": this.#authToken
-            }
+            apiName: "VTubeStudioPublicAPI",
+            apiVersion: "1.0",
+            requestID: "x",
+            messageType: "AuthenticationRequest",
+            data: {
+                pluginName: "w-AI-fu",
+                pluginDeveloper: "w-AI-fu_DEV",
+                authenticationToken: this.#authToken,
+            },
         }));
     }
     #findEmotion(name) {
@@ -133,104 +138,171 @@ class VtubeStudioAPI {
         return null;
     }
     playSequence(emotion_name, type) {
+        if (this.#websocket.readyState !== ws_1.default.OPEN)
+            return;
         let emotion = this.#findEmotion(emotion_name);
         if (emotion === null) {
-            io_1.IO.debug('ERROR: Tried to play undefined emotion: ' + emotion_name);
+            io_1.IO.debug("ERROR: Tried to play undefined emotion: " + emotion_name);
             return;
         }
         let steps = emotion[`${type}_hotkey_sequence`];
         for (let step of steps) {
             this.#websocket.send(JSON.stringify({
-                "apiName": "VTubeStudioPublicAPI",
-                "apiVersion": "1.0",
-                "requestID": "x",
-                "messageType": "HotkeyTriggerRequest",
-                "data": {
-                    "hotkeyID": step
-                }
+                apiName: "VTubeStudioPublicAPI",
+                apiVersion: "1.0",
+                requestID: "x",
+                messageType: "HotkeyTriggerRequest",
+                data: {
+                    hotkeyID: step,
+                },
+            }));
+        }
+    }
+    playCustomSequence(steps) {
+        if (this.#websocket.readyState !== ws_1.default.OPEN)
+            return;
+        for (let step of steps) {
+            this.#websocket.send(JSON.stringify({
+                apiName: "VTubeStudioPublicAPI",
+                apiVersion: "1.0",
+                requestID: "x",
+                messageType: "HotkeyTriggerRequest",
+                data: {
+                    hotkeyID: step,
+                },
             }));
         }
     }
     fullReset() {
-        this.current_emotion = '';
+        if (this.#websocket.readyState !== ws_1.default.OPEN)
+            return;
+        this.current_emotion = "";
         let steps = Waifu_1.wAIfu.state.config.vts.full_reset_hotkey_sequence.value;
         for (let step of steps) {
             this.#websocket.send(JSON.stringify({
-                "apiName": "VTubeStudioPublicAPI",
-                "apiVersion": "1.0",
-                "requestID": "x",
-                "messageType": "HotkeyTriggerRequest",
-                "data": {
-                    "hotkeyID": step
-                }
+                apiName: "VTubeStudioPublicAPI",
+                apiVersion: "1.0",
+                requestID: "x",
+                messageType: "HotkeyTriggerRequest",
+                data: {
+                    hotkeyID: step,
+                },
             }));
         }
     }
     setAnimationSequences(emotion) {
         let found_emotion = this.#findEmotion(emotion);
         if (found_emotion === null) {
-            io_1.IO.debug('ERROR: Tried to use undefined emotion: ' + emotion);
+            io_1.IO.debug("ERROR: Tried to use undefined emotion: " + emotion);
             return;
         }
         this.current_emotion = emotion;
     }
     async reset() {
+        if (this.#websocket.readyState !== ws_1.default.OPEN)
+            return;
         let emotion = this.#findEmotion(this.current_emotion);
         if (emotion === null) {
-            io_1.IO.debug('ERROR: Tried to play undefined emotion: ' + this.current_emotion);
+            io_1.IO.debug("ERROR: Tried to play undefined emotion: " +
+                this.current_emotion);
             return;
         }
         let steps = emotion.reset_hotkey_sequence;
         for (let step of steps) {
             this.#websocket.send(JSON.stringify({
-                "apiName": "VTubeStudioPublicAPI",
-                "apiVersion": "1.0",
-                "requestID": "x",
-                "messageType": "HotkeyTriggerRequest",
-                "data": {
-                    "hotkeyID": step
-                }
+                apiName: "VTubeStudioPublicAPI",
+                apiVersion: "1.0",
+                requestID: "x",
+                messageType: "HotkeyTriggerRequest",
+                data: {
+                    hotkeyID: step,
+                },
             }));
         }
         await new Promise((resolve) => setTimeout(() => resolve(), 100));
         return;
     }
+    animateSinging() {
+        if (this.#websocket.readyState !== ws_1.default.OPEN)
+            return;
+        let steps = Waifu_1.wAIfu.state.config.vts.singing_hotkey_sequence.value;
+        for (let step of steps) {
+            this.#websocket.send(JSON.stringify({
+                apiName: "VTubeStudioPublicAPI",
+                apiVersion: "1.0",
+                requestID: "x",
+                messageType: "HotkeyTriggerRequest",
+                data: {
+                    hotkeyID: step,
+                },
+            }));
+        }
+    }
     animateTalking() {
+        if (this.#websocket.readyState !== ws_1.default.OPEN)
+            return;
         let emotion = this.#findEmotion(this.current_emotion);
         if (emotion === null) {
-            io_1.IO.debug('ERROR: Tried to play undefined emotion: ' + this.current_emotion);
+            io_1.IO.debug("ERROR: Tried to play undefined emotion: " +
+                this.current_emotion);
             return;
         }
         let steps = emotion.talking_hotkey_sequence;
         for (let step of steps) {
             this.#websocket.send(JSON.stringify({
-                "apiName": "VTubeStudioPublicAPI",
-                "apiVersion": "1.0",
-                "requestID": "x",
-                "messageType": "HotkeyTriggerRequest",
-                "data": {
-                    "hotkeyID": step
-                }
+                apiName: "VTubeStudioPublicAPI",
+                apiVersion: "1.0",
+                requestID: "x",
+                messageType: "HotkeyTriggerRequest",
+                data: {
+                    hotkeyID: step,
+                },
             }));
         }
     }
     animateIdle() {
+        if (this.#websocket.readyState !== ws_1.default.OPEN)
+            return;
         let emotion = this.#findEmotion(this.current_emotion);
         if (emotion === null) {
-            io_1.IO.debug('ERROR: Tried to play undefined emotion: ' + this.current_emotion);
+            io_1.IO.debug("ERROR: Tried to play undefined emotion: " +
+                this.current_emotion);
             return;
         }
         let steps = emotion.idle_hotkey_sequence;
         for (let step of steps) {
             this.#websocket.send(JSON.stringify({
-                "apiName": "VTubeStudioPublicAPI",
-                "apiVersion": "1.0",
-                "requestID": "x",
-                "messageType": "HotkeyTriggerRequest",
-                "data": {
-                    "hotkeyID": step
-                }
+                apiName: "VTubeStudioPublicAPI",
+                apiVersion: "1.0",
+                requestID: "x",
+                messageType: "HotkeyTriggerRequest",
+                data: {
+                    hotkeyID: step,
+                },
             }));
+        }
+    }
+    tryPlayKeywordSequence(text) {
+        const val_array = Waifu_1.wAIfu.state.config.vts.keyword_based_animations.value;
+        const text_lower = text.toLowerCase();
+        for (let item of val_array) {
+            let keywords = item.keywords;
+            for (let keyword of keywords) {
+                if (text_lower.includes(keyword.toLowerCase())) {
+                    for (let step of item.hotkey_sequence) {
+                        this.#websocket.send(JSON.stringify({
+                            apiName: "VTubeStudioPublicAPI",
+                            apiVersion: "1.0",
+                            requestID: "x",
+                            messageType: "HotkeyTriggerRequest",
+                            data: {
+                                hotkeyID: step,
+                            },
+                        }));
+                    }
+                    return;
+                }
+            }
         }
     }
     free() {

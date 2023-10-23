@@ -30,40 +30,46 @@ const Result_1 = require("../types/Result");
 const llm_interface_1 = require("./llm_interface");
 const Waifu_1 = require("../types/Waifu");
 const io_1 = require("../io/io");
+const GENERATION_TIMEOUT_MS = 10_000;
 class LargeLanguageModelNovelAI {
     #child_process;
     #websocket = new ws_1.default(null);
     #websocket_server;
     constructor() {
-        this.#child_process = cproc.spawn('python', ['novel_llm.py'], {
-            cwd: process.cwd() + '/source/app/novelai_api/',
+        this.#child_process = cproc.spawn(Waifu_1.ENV.PYTHON_PATH, ["novel_llm.py"], {
+            cwd: process.cwd() + "/source/app/novelai_api/",
             env: {
                 NAI_USERNAME: Waifu_1.wAIfu.state.auth["novelai"]["mail"],
-                NAI_PASSWORD: Waifu_1.wAIfu.state.auth["novelai"]["password"]
+                NAI_PASSWORD: Waifu_1.wAIfu.state.auth["novelai"]["password"],
             },
-            detached: false, shell: false
+            detached: false,
+            shell: false,
         });
-        this.#child_process.stderr?.on('data', (data) => {
+        this.#child_process.stderr?.on("data", (data) => {
             io_1.IO.warn(data.toString());
         });
-        this.#child_process.stdout?.on('data', (data) => {
+        this.#child_process.stdout?.on("data", (data) => {
             io_1.IO.print(data.toString());
         });
-        this.#websocket_server = new ws_1.WebSocketServer({ host: '127.0.0.1', port: 8765 });
+        this.#websocket_server = new ws_1.WebSocketServer({
+            host: "127.0.0.1",
+            port: 8765,
+        });
     }
     async initialize() {
         return new Promise((resolve) => {
-            this.#websocket_server.on('connection', (socket) => {
+            this.#websocket_server.on("connection", (socket) => {
                 this.#websocket = socket;
-                this.#websocket.on('error', (err) => io_1.IO.print(err));
-                this.#websocket.send('');
+                this.#websocket.on("error", (err) => io_1.IO.print(err));
+                this.#websocket.send("");
+                io_1.IO.debug("Loaded LargeLanguageModelNovelAI.");
                 resolve();
             });
         });
     }
     async free() {
-        return new Promise(resolve => {
-            this.#child_process.on('close', () => {
+        return new Promise((resolve) => {
+            this.#child_process.on("close", () => {
                 this.#child_process.removeAllListeners();
                 this.#websocket_server.removeAllListeners();
                 this.#websocket.removeAllListeners();
@@ -74,7 +80,6 @@ class LargeLanguageModelNovelAI {
                         resolve();
                         return;
                     }
-                    ;
                     setTimeout(el, 100);
                 };
                 setTimeout(el, 100);
@@ -88,23 +93,35 @@ class LargeLanguageModelNovelAI {
                 break await_connect;
             await new Promise((resolve) => setTimeout(() => resolve(), 100));
         }
-        return new Promise((resolve) => {
-            this.#websocket.send("GENERATE " + JSON.stringify({
-                "prompt": prompt,
-                "config": args
+        args["model"] =
+            Waifu_1.wAIfu.state.config.large_language_model.novelai_model.value;
+        this.#websocket.send("GENERATE " +
+            JSON.stringify({
+                prompt: prompt,
+                config: args,
             }));
+        return new Promise((resolve) => {
+            let is_resolved = false;
+            const timeout = () => {
+                if (is_resolved === true)
+                    return;
+                is_resolved = true;
+                resolve(new Result_1.Result(false, "Timed out while waiting for LLM response.", llm_interface_1.LLM_GEN_ERRORS.RESPONSE_TIMEOUT));
+            };
+            setTimeout(timeout, GENERATION_TIMEOUT_MS);
             const el = (ev) => {
-                let resp = ev.data.toString('utf8');
-                let split_data = resp.split(' ');
+                let resp = ev.data.toString("utf8");
+                let split_data = resp.split(" ");
                 let prefix = split_data[0];
                 let result;
                 switch (prefix) {
                     case "TEXT":
                         {
-                            let payload = split_data.slice(1, undefined)
-                                .join(' ');
+                            let payload = split_data
+                                .slice(1, undefined)
+                                .join(" ");
                             if (/\n$/g.test(payload) === false) {
-                                payload += '\n';
+                                payload += "\n";
                             }
                             result = new Result_1.Result(true, payload, llm_interface_1.LLM_GEN_ERRORS.NONE);
                         }
@@ -112,20 +129,24 @@ class LargeLanguageModelNovelAI {
                     case "ERROR":
                         {
                             let err_type = split_data[1];
-                            let err_msg = split_data.slice(2, undefined)
-                                .join(' ');
+                            let err_msg = split_data
+                                .slice(2, undefined)
+                                .join(" ");
                             result = new Result_1.Result(false, err_msg, err_type);
                         }
                         break;
                     default:
-                        result = new Result_1.Result(false, 'Received undefined response from LLM.', llm_interface_1.LLM_GEN_ERRORS.UNDEFINED);
+                        result = new Result_1.Result(false, "Received undefined response from LLM.", llm_interface_1.LLM_GEN_ERRORS.UNDEFINED);
                         break;
                 }
+                if (is_resolved === true)
+                    return;
+                is_resolved = true;
                 resolve(result);
-                this.#websocket.removeEventListener('message', el);
+                this.#websocket.removeEventListener("message", el);
                 return;
             };
-            this.#websocket.addEventListener('message', el);
+            this.#websocket.addEventListener("message", el);
         });
     }
 }

@@ -4,14 +4,17 @@ import { mainLoop_impl } from "../main_loop/main_loop";
 import { AppState } from "../state/state";
 import { Plugin } from "../plugins/plugin";
 
+export const ENV = {
+    PYTHON_PATH: "python",
+};
+
 export class WaifuApp {
-    version: string = '';
+    version: string = "";
     getVersion = getVersion_impl;
     mainLoop = mainLoop_impl;
-    state: AppState|undefined = undefined;
-    dependencies: Dependencies|undefined = undefined;
+    state: AppState | undefined = undefined;
+    dependencies: Dependencies | undefined = undefined;
     plugins: Plugin[] = [];
 }
 
 export const wAIfu = new WaifuApp();
-

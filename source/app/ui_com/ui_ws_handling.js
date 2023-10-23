@@ -13,6 +13,19 @@ const characters_1 = require("../characters/characters");
 const io_1 = require("../io/io");
 const start_update_1 = require("../update/start_update");
 const write_preset_1 = require("../config/write_preset");
+var PREFIX_TYPE;
+(function (PREFIX_TYPE) {
+    PREFIX_TYPE["COMMAND"] = "COMMAND";
+    PREFIX_TYPE["MESSAGE"] = "MESSAGE";
+    PREFIX_TYPE["CONFIG"] = "CONFIG";
+    PREFIX_TYPE["CHARACTER"] = "CHARACTER";
+    PREFIX_TYPE["AUTH"] = "AUTH";
+    PREFIX_TYPE["INTERRUPT"] = "INTERRUPT";
+    PREFIX_TYPE["RESET"] = "RESET";
+    PREFIX_TYPE["UPDATE"] = "UPDATE";
+    PREFIX_TYPE["PRESET"] = "PRESET";
+    PREFIX_TYPE["NEW_PRESET"] = "NEW_PRESET";
+})(PREFIX_TYPE || (PREFIX_TYPE = {}));
 function handleUImessage_impl(ui, message) {
     const split_message = message.split(' ');
     if (split_message.length <= 0) {
@@ -32,7 +45,22 @@ function handleUImessage_impl(ui, message) {
     switch (prefix) {
         case PREFIX_TYPE.MESSAGE:
             {
-                Waifu_1.wAIfu.state.command_queue.pushBack(json_object["text"]);
+                let type_match = (0, Helper_1.isOfClassDeep)(json_object, { text: "" }, { obj_name: "message", add_missing_fields: false, print: true });
+                if (type_match === false) {
+                    io_1.IO.warn('ERROR: Incoming input message from UI did not pass sanity test.');
+                    return;
+                }
+                Waifu_1.wAIfu.state.command_queue.pushBack(json_object.text);
+            }
+            break;
+        case PREFIX_TYPE.COMMAND:
+            {
+                let type_match = (0, Helper_1.isOfClassDeep)(json_object, { text: "" }, { obj_name: "message", add_missing_fields: false, print: true });
+                if (type_match === false) {
+                    io_1.IO.warn('ERROR: Incoming input message from UI did not pass sanity test.');
+                    return;
+                }
+                Waifu_1.wAIfu.state.command_queue.pushFront(json_object.text);
             }
             break;
         case PREFIX_TYPE.CHARACTER:
@@ -87,6 +115,8 @@ function handleUImessage_impl(ui, message) {
         case PREFIX_TYPE.INTERRUPT:
             {
                 Waifu_1.wAIfu.dependencies?.tts.interrupt();
+                for (let plugin of Waifu_1.wAIfu.plugins)
+                    plugin.onInterrupt();
                 io_1.IO.print('Interrupted speech.');
             }
             break;
@@ -117,7 +147,7 @@ function handleUImessage_impl(ui, message) {
                 if (Waifu_1.wAIfu.state === undefined)
                     return;
                 let new_preset_name = json_object.name + '.json';
-                (0, export_config_1.writeConfig)(Waifu_1.wAIfu.state.config, new_preset_name);
+                (0, export_config_1.writeConfig)(new config_1.Config(), new_preset_name);
                 Waifu_1.wAIfu.state.current_preset = new_preset_name;
                 (0, write_preset_1.writePreset)(Waifu_1.wAIfu.state.current_preset);
                 Waifu_1.wAIfu.state.presets.push(Waifu_1.wAIfu.state.current_preset);
@@ -130,15 +160,3 @@ function handleUImessage_impl(ui, message) {
     }
 }
 exports.handleUImessage_impl = handleUImessage_impl;
-var PREFIX_TYPE;
-(function (PREFIX_TYPE) {
-    PREFIX_TYPE["MESSAGE"] = "MESSAGE";
-    PREFIX_TYPE["CONFIG"] = "CONFIG";
-    PREFIX_TYPE["CHARACTER"] = "CHARACTER";
-    PREFIX_TYPE["AUTH"] = "AUTH";
-    PREFIX_TYPE["INTERRUPT"] = "INTERRUPT";
-    PREFIX_TYPE["RESET"] = "RESET";
-    PREFIX_TYPE["UPDATE"] = "UPDATE";
-    PREFIX_TYPE["PRESET"] = "PRESET";
-    PREFIX_TYPE["NEW_PRESET"] = "NEW_PRESET";
-})(PREFIX_TYPE || (PREFIX_TYPE = {}));

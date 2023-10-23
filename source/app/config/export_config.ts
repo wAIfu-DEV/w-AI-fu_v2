@@ -3,7 +3,12 @@ import { Config } from './config';
 import { IO } from '../io/io';
 import { wAIfu } from '../types/Waifu';
 
-export function writeConfig(config: Config, file_name: string|null|undefined) {
+/**
+ * Writes a Config object to a json file in `userdata/config/`
+ * @param config Config object
+ * @param file_name name of the config file. (with .json extension)
+ */
+export function writeConfig(config: Config, file_name: string|null|undefined): void {
 
     let file = file_name;
 

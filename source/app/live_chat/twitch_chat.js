@@ -10,42 +10,59 @@ const Waifu_1 = require("../types/Waifu");
 const Result_1 = require("../types/Result");
 const twitch_eventsub_1 = require("../twitch/twitch_eventsub");
 const io_1 = require("../io/io");
+const sanitize_1 = require("../sanitize/sanitize");
+const command_handler_1 = require("../commands/command_handler");
 class LiveChatTwitch {
     #websocket;
     #enventsub;
     #buffer = [];
     #prioritized_buffer = [];
     constructor() {
-        this.#websocket = new ws_1.default('wss://irc-ws.chat.twitch.tv:443');
+        this.#websocket = new ws_1.default("wss://irc-ws.chat.twitch.tv:443");
         this.#enventsub = new twitch_eventsub_1.TwitchEventSubs();
     }
     initialize() {
         return new Promise((resolve) => {
             let resolved = false;
-            this.#websocket.on('open', () => {
-                this.#websocket.send('CAP REQ :twitch.tv/commands twitch.tv/membership twitch.tv/tags');
+            this.#websocket.on("open", () => {
+                this.#websocket.send("CAP REQ :twitch.tv/commands twitch.tv/membership twitch.tv/tags");
                 this.#websocket.send(`PASS oauth:${Waifu_1.wAIfu.state.auth.twitch.oauth_token}`);
                 this.#websocket.send(`NICK ${Waifu_1.wAIfu.state.auth.twitch.channel_name.toLowerCase()}`);
                 this.#websocket.send(`JOIN #${Waifu_1.wAIfu.state.auth.twitch.channel_name.toLowerCase()}`);
             });
-            this.#websocket.on('error', (data) => {
-                let data_str = data.toString('utf8');
-                io_1.IO.warn('Twitch API:', data_str);
+            this.#websocket.on("error", (data) => {
+                let data_str = data.toString("utf8");
+                io_1.IO.warn("Twitch API:", data_str);
             });
-            this.#websocket.on('message', (data) => {
+            this.#websocket.on("message", (data) => {
                 if (resolved === false) {
                     resolved = true;
                     this.#enventsub.connectTwitchEventSub();
+                    this.#enventsub.on("reconnect", () => {
+                        this.#enventsub = new twitch_eventsub_1.TwitchEventSubs();
+                    });
+                    io_1.IO.debug("Loaded LiveChatTwitch.");
                     resolve();
                 }
-                let data_str = data.toString('utf8');
+                let data_str = data.toString("utf8");
                 io_1.IO.debug(data_str);
-                if (data_str.includes('PING')) {
-                    this.#websocket.send('PONG');
+                if (data_str.includes("PING")) {
+                    this.#websocket.send("PONG");
+                    return;
                 }
                 let parsed_data = this.#parseMessage(data_str.trim());
                 if (parsed_data === null)
                     return;
+                if (parsed_data.msg.message.content.startsWith("!")) {
+                    let handled = false;
+                    for (let plugin of Waifu_1.wAIfu.plugins) {
+                        handled = plugin.onCommandHandling(parsed_data.msg.message.content, false, parsed_data.msg.message.sender);
+                        if (handled)
+                            return;
+                    }
+                    (0, command_handler_1.handleCommand)(parsed_data.msg.message.content, false);
+                    return;
+                }
                 if (parsed_data.prioritized === true) {
                     this.#prioritized_buffer.push(parsed_data.msg);
                 }
@@ -57,8 +74,8 @@ class LiveChatTwitch {
     }
     free() {
         return new Promise((resolve) => {
-            if (this.#websocket.readyState !== ws_1.default.CLOSED
-                && this.#websocket.readyState !== ws_1.default.CLOSING) {
+            if (this.#websocket.readyState !== ws_1.default.CLOSED &&
+                this.#websocket.readyState !== ws_1.default.CLOSING) {
                 this.#websocket.close();
             }
             this.#websocket.removeAllListeners();
@@ -66,8 +83,13 @@ class LiveChatTwitch {
             resolve();
         });
     }
+    send(message) {
+        this.#websocket.send(`PRIVMSG #${Waifu_1.wAIfu
+            .state.auth.twitch.channel_name.trim()
+            .toLowerCase()} :${message}`);
+    }
     nextMessage() {
-        switch (Waifu_1.wAIfu.state.config.behaviour.chat_reading_mode.value) {
+        switch (Waifu_1.wAIfu.state.config.live_chat.chat_reading_mode.value) {
             case "latest":
                 return this.#policyLatest();
             case "all":
@@ -141,8 +163,8 @@ class LiveChatTwitch {
         let content = matches[4];
         let prioritized = false;
         let is_highlighted = /msg-id=highlighted-message;/g.test(metadata);
-        if (is_highlighted === true
-            && Waifu_1.wAIfu.state.config.behaviour.always_read_highlighted.value === true)
+        if (is_highlighted === true &&
+            Waifu_1.wAIfu.state.config.live_chat.always_read_highlighted.value === true)
             prioritized = true;
         let reg_name_result = /(?:display-name=)(.*?)(?:;)/g.exec(metadata);
         if (reg_name_result !== null)
@@ -157,17 +179,19 @@ class LiveChatTwitch {
             if (starts_with_comma)
                 return null;
         }
-        content = content.replaceAll(/[^a-zA-Z0-9 \.\,\?\!\+\-\%\*\=\/\_\:\;\$\€\@\<\>\(\)]/g, '');
+        if (Waifu_1.wAIfu.state?.config.moderation.remove_non_ascii_from_chat.value ===
+            true)
+            content = (0, sanitize_1.removeNonAsciiSymbols)(content);
         return {
             msg: {
                 message: {
                     sender: user,
                     content: content,
-                    trusted: false
+                    trusted: false,
                 },
-                metadata: metadata
+                metadata: metadata,
             },
-            prioritized: prioritized
+            prioritized: prioritized,
         };
     }
 }

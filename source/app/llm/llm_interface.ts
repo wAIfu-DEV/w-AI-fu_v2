@@ -3,7 +3,10 @@ import { Result } from "../types/Result";
 export interface LargeLanguageModel {
     initialize(): Promise<void>;
     free(): Promise<void>;
-    generate(prompt: string, settings: LlmGenerationSettings): Promise<Result<string, LLM_GEN_ERRORS>>;
+    generate(
+        prompt: string,
+        settings: LlmGenerationSettings
+    ): Promise<Result<string, LLM_GEN_ERRORS>>;
 }
 
 export enum LLM_GEN_ERRORS {
@@ -11,7 +14,8 @@ export enum LLM_GEN_ERRORS {
     WRONG_AUTH = "WRONG_AUTH",
     UNDEFINED = "UNDEFINED",
     INCORRECT_PROMPT = "INCORRECT_PROMPT",
-    RESPONSE_FAILURE = "RESPONSE_FAILURE"
+    RESPONSE_FAILURE = "RESPONSE_FAILURE",
+    RESPONSE_TIMEOUT = "RESPONSE_TIMEOUT",
 }
 
 export class LlmGenerationSettings {

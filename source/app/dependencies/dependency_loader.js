@@ -13,16 +13,17 @@ const llm_characterai_1 = require("../llm/llm_characterai");
 const Waifu_1 = require("../types/Waifu");
 const io_1 = require("../io/io");
 const vtube_studio_1 = require("../vtube_studio/vtube_studio");
+const tts_azure_1 = require("../tts/tts_azure");
 async function loadDependencies(config) {
     let input_sys;
-    if (config.behaviour.voice_input.value) {
+    if (config.speech_to_text.voice_input.value) {
         input_sys = new input_voice_1.InputSystemVoice();
     }
     else {
         input_sys = new input_text_1.InputSystemText();
     }
     let llm;
-    let llm_provider = config.providers.llm_provider.value;
+    let llm_provider = config.large_language_model.llm_provider.value;
     switch (llm_provider) {
         case "novelai":
             {
@@ -44,11 +45,16 @@ async function loadDependencies(config) {
             break;
     }
     let tts;
-    let tts_provider = config.providers.tts_provider.value;
+    let tts_provider = config.text_to_speech.tts_provider.value;
     switch (tts_provider) {
         case "novelai":
             {
                 tts = new tts_novelai_1.TextToSpeechNovelAI();
+            }
+            break;
+        case "azure":
+            {
+                tts = new tts_azure_1.TextToSpeechAzure();
             }
             break;
         default:
@@ -56,8 +62,8 @@ async function loadDependencies(config) {
             break;
     }
     let live_chat;
-    let live_chat_provider = config.providers.livestream_platform.value;
-    if (config.behaviour.read_live_chat.value === false) {
+    let live_chat_provider = config.live_chat.livestream_platform.value;
+    if (config.live_chat.read_live_chat.value === false) {
         live_chat_provider = "none";
         live_chat = new live_chat_none_1.LiveChatNone();
     }
@@ -70,7 +76,7 @@ async function loadDependencies(config) {
                 break;
             case "youtube":
                 {
-                    io_1.IO.warn('ERROR: Youtube support has not yet been implemented.');
+                    io_1.IO.warn("ERROR: Youtube support has not yet been implemented.");
                     live_chat = new twitch_chat_1.LiveChatTwitch();
                 }
                 break;
@@ -80,13 +86,14 @@ async function loadDependencies(config) {
         }
     }
     let vts = new vtube_studio_1.VtubeStudioAPI();
+    io_1.IO.debug("Constructed dependencies.");
     await Promise.allSettled([
         input_sys.initialize(),
         llm.initialize(),
         tts.initialize(),
         live_chat.initialize(),
     ]);
-    io_1.IO.debug(`LLM: ${llm_provider}, TTS: ${tts_provider}, STT: ${Waifu_1.wAIfu.state.config.providers.stt_provider.value}, LIVE: ${live_chat_provider}`);
+    io_1.IO.debug(`LLM: ${llm_provider}, TTS: ${tts_provider}, STT: ${Waifu_1.wAIfu.state.config.speech_to_text.stt_provider.value}, LIVE: ${live_chat_provider}`);
     return new dependencies_1.Dependencies(input_sys, llm, tts, live_chat, undefined, vts);
 }
 exports.loadDependencies = loadDependencies;

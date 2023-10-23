@@ -29,6 +29,7 @@ const Result_1 = require("../types/Result");
 const llm_interface_1 = require("./llm_interface");
 const Waifu_1 = require("../types/Waifu");
 const io_1 = require("../io/io");
+const characters_1 = require("../characters/characters");
 class LargeLanguageModelCharacterAI {
     #child_process;
     constructor() {
@@ -36,7 +37,7 @@ class LargeLanguageModelCharacterAI {
             cwd: process.cwd() + '/source/app/characterai_api/',
             env: {
                 CAI_TOKEN: Waifu_1.wAIfu.state.auth["characterai"]["token"],
-                CHARACTER: JSON.stringify(Waifu_1.wAIfu.state.characters[Waifu_1.wAIfu.state.config._.character_name.value])
+                CHARACTER: JSON.stringify((0, characters_1.getCurrentCharacter)())
             },
             detached: false, shell: false
         });

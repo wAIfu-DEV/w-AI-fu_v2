@@ -8,22 +8,22 @@ function isOfClass(x, y, options = { print: false, obj_name: "x", add_missing_fi
         if (x === y)
             return true;
         if (options.print === true)
-            io_1.IO.warn('WARNING:', options.obj_name, 'failed the type check.');
+            io_1.IO.warn("WARNING:", options.obj_name, "failed the type check.");
         return false;
     }
     if (typeof x !== "object") {
         if (typeof x === typeof y)
             return true;
         if (options.print === true)
-            io_1.IO.warn('WARNING:', options.obj_name, 'failed the type check.');
+            io_1.IO.warn("WARNING:", options.obj_name, "failed the type check.");
         return false;
     }
     for (let key of Object.keys(y)) {
         if (key in x === false) {
             if (options.print === true) {
-                io_1.IO.warn('WARNING:', options.obj_name, 'failed the type check.');
+                io_1.IO.warn("WARNING:", options.obj_name, "failed the type check.");
                 if (options.add_missing_fields === true) {
-                    io_1.IO.warn('WARNING: creating new field', key, 'in', options.obj_name);
+                    io_1.IO.warn("WARNING: creating new field", key, "in", options.obj_name);
                     x[key] = y[key];
                     return true;
                 }
@@ -39,31 +39,35 @@ function isOfClassDeep(x, y, options = { print: false, obj_name: "x", add_missin
         if (x === y)
             return true;
         if (options.print === true)
-            io_1.IO.warn('WARNING:', options.obj_name, 'failed the type check.');
+            io_1.IO.warn("WARNING:", options.obj_name, "failed the type check.");
         return false;
     }
     if (typeof x !== "object") {
         if (typeof x === typeof y)
             return true;
         if (options.print === true)
-            io_1.IO.warn('WARNING:', options.obj_name, 'failed the type check.');
+            io_1.IO.warn("WARNING:", options.obj_name, "failed the type check.");
         return false;
     }
     for (let key of Object.keys(y)) {
         if (key in x === false) {
-            if (options.print === true) {
-                io_1.IO.warn('WARNING:', options.obj_name, 'failed the type check.');
-                if (options.add_missing_fields === true) {
-                    io_1.IO.warn('WARNING: creating new field', key, 'in', options.obj_name);
-                    x[key] = y[key];
-                    return true;
-                }
+            if (options.print === true)
+                io_1.IO.warn("WARNING:", options.obj_name, "failed the type check.");
+            if (options.add_missing_fields === true) {
+                if (options.print === true)
+                    io_1.IO.warn("WARNING: creating new field", key, "in", options.obj_name);
+                x[key] = y[key];
+                continue;
             }
             return false;
         }
-        if (isOfClassDeep(x[key], y[key], { print: options.print, obj_name: options.obj_name + '.' + key, add_missing_fields: options.add_missing_fields }) === false) {
+        if (isOfClassDeep(x[key], y[key], {
+            print: options.print,
+            obj_name: options.obj_name + "." + key,
+            add_missing_fields: options.add_missing_fields,
+        }) === false) {
             if (options.print === true)
-                io_1.IO.warn('WARNING:', options.obj_name, 'failed the type check.');
+                io_1.IO.warn("WARNING:", options.obj_name, "failed the type check.");
             return false;
         }
     }

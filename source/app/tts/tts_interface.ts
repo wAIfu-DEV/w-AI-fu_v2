@@ -13,7 +13,8 @@ export interface TextToSpeech {
 export enum TTS_GEN_ERROR {
     NONE = "NONE",
     WRONG_AUTH = "WRONG_AUTH",
-    RESPONSE_FAILURE = "RESPONSE_FAILURE"
+    RESPONSE_FAILURE = "RESPONSE_FAILURE",
+    RESPONSE_TIMEOUT = "RESPONSE_TIMEOUT"
 }
 
 export enum TTS_PLAY_ERROR {

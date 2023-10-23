@@ -1,3 +1,5 @@
+import { setClosedCaptions_impl } from "../closed_captions/closed_captions";
+import { appendLog } from "../logging/log_to_file";
 import { UserInterface } from "../ui_com/userinterface";
 
 /**
@@ -5,9 +7,9 @@ import { UserInterface } from "../ui_com/userinterface";
  */
 export class IO {
 
-    static ui_ref: UserInterface|undefined = undefined;
-    static buffer: {text: string, color: string, debug: boolean}[] = [];
-    static log_buffer: {text: string, time: number}[] = [];
+    static ui_ref: UserInterface | undefined = undefined;
+    static buffer: { text: string, color: string, debug: boolean }[] = [];
+    static log_buffer: { text: string, time: number }[] = [];
 
     /**
      * Similar to `console.log()` with support for UI.
@@ -26,7 +28,7 @@ export class IO {
             this.ui_ref.send('CONSOLE_MESSAGE', { text: result, color: "lightgrey" });
         else
             this.buffer.push({ text: result, color: "lightgrey", debug: false });
-        this.log_buffer.push({ text: result, time: new Date().getTime() });
+        appendLog({ text: result, time: new Date().getTime() });
     }
 
     /**
@@ -46,7 +48,7 @@ export class IO {
             this.ui_ref.send('CONSOLE_DEBUG', { text: result, color: "grey" });
         else
             this.buffer.push({ text: result, color: "grey", debug: true });
-        this.log_buffer.push({ text: result, time: new Date().getTime() });
+        appendLog({ text: result, time: new Date().getTime() });
     }
 
     /**
@@ -62,7 +64,7 @@ export class IO {
         });
         let result = args_stringified.join(' ');
         process.stdout.write(result + '\r\n');
-        this.log_buffer.push({ text: result, time: new Date().getTime() });
+        appendLog({ text: result, time: new Date().getTime() });
     }
 
     /**
@@ -82,7 +84,7 @@ export class IO {
             this.ui_ref.send('CONSOLE_MESSAGE', { text: result, color: "orange" });
         else
             this.buffer.push({ text: result, color: "orange", debug: false });
-        this.log_buffer.push({ text: result, time: new Date().getTime() });
+        appendLog({ text: result, time: new Date().getTime() });
     }
 
     /**
@@ -102,7 +104,7 @@ export class IO {
             this.ui_ref.send('CONSOLE_MESSAGE', { text: result, color: "red" });
         else
             this.buffer.push({ text: result, color: "red", debug: false });
-        this.log_buffer.push({ text: result, time: new Date().getTime() });
+        appendLog({ text: result, time: new Date().getTime() });
     }
 
     /**
@@ -117,4 +119,9 @@ export class IO {
             this.ui_ref.send((entry?.debug) ? 'CONSOLE_DEBUG' : 'CONSOLE_MESSAGE', { text: entry?.text, color: entry?.color });
         }
     }
+
+    /**
+     * 
+     */
+    static setClosedCaptions = setClosedCaptions_impl;
 }

@@ -1,30 +1,29 @@
-import * as fs from 'fs';
-import { Auth } from './auth';
-import { isOfClassDeep } from '../types/Helper';
-import { IO } from '../io/io';
+import { Auth } from "./auth";
+import { isOfClassDeep } from "../types/Helper";
+import { IO } from "../io/io";
+import { readParseJSON } from "../file_system/file_system";
 
+/**
+ * @returns Auth object from `userdata/auth/auth.json` or empty Auth object if
+ * not found or errored
+ */
 export function importAuthFromFile_impl(): Auth {
-
-    let raw_data: string;
-    try {
-        raw_data = fs.readFileSync(Auth.AUTH_PATH, {encoding: 'utf8'});
-    } catch (error) {
-        IO.warn('ERROR: Could not read auth.json file.');
+    let parse_result = readParseJSON(Auth.AUTH_PATH);
+    if (parse_result.success === false) {
+        IO.warn("ERROR: Could not import auth infos.");
         return new Auth();
     }
+    let json_obj = parse_result.value;
 
-    let json_obj: any;
-    try {
-        json_obj = JSON.parse(raw_data);
-    } catch (error) {
-        IO.warn('ERROR: Could not parse auth.json file.');
+    if (
+        isOfClassDeep<Auth>(json_obj, new Auth(), {
+            print: true,
+            obj_name: "auth",
+            add_missing_fields: true,
+        }) === false
+    ) {
+        IO.warn("ERROR: Auth object failed to pass the sanity check.");
         return new Auth();
     }
-
-    if (isOfClassDeep(json_obj, new Auth(), { print: true, obj_name: "auth", add_missing_fields: true }) === false) {
-        IO.warn('ERROR: Auth object failed to pass the sanity check.');
-        return new Auth();
-    }
-
     return json_obj as Auth;
 }

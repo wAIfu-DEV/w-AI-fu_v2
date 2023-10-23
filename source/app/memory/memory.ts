@@ -1,74 +1,100 @@
+import { Character } from "../characters/character";
+import { getCurrentCharacter } from "../characters/characters";
 import { wAIfu } from "../types/Waifu";
-import { decontaminateMemory } from "./anti_contamination";
+import { insertInArray } from "../utils/insert";
 
 export class Memory {
-
     #memories: string[] = [];
 
-    getLongTerm() {
-        let char: any = wAIfu.state!.characters[wAIfu.state!.config._.character_name.value];
-        return `----\n${char["char_persona"]}\n***\n[ Style: chat${(wAIfu.state?.config.moderation.sfw_generation_hint.value === true) ? ', SFW' : ''} ]\n${char["example_dialogue"]}`;
+    getCharacterDef(): string {
+        const character: Character = getCurrentCharacter();
+        const should_add_sfw_hint: boolean =
+            wAIfu.state?.config.moderation.sfw_generation_hint.value || false;
+        return `----\n${character.char_persona}${
+            character.char_persona.endsWith("\n") ? "" : "\n"
+        }***\n[ Style: twitch chat${should_add_sfw_hint ? ", SFW" : ""} ]\n`;
     }
 
-    getShortTerm() {
-
-        return (wAIfu.state?.config.memory.memory_decontamination.value === true)
-               ? decontaminateMemory(this.#memories).join('')
-               : this.#memories.join('');
+    getLongTerm(): string[] {
+        const character: Character = getCurrentCharacter();
+        if (character.example_dialogue === "") return [];
+        return [...character.example_dialogue.split("\n").map((v) => v + "\n")];
     }
 
-    getMemories(context: string|null = null, prompt: string|null = null) {
-        let result:string = '';
+    getShortTerm(): string[] {
+        return structuredClone(this.#memories);
+    }
 
-        let max_mem = wAIfu.state!.config.memory.max_short_term_memory_entries.value;
-        while (this.#memories.length > max_mem)
-            this.#memories.shift();
-        
+    getMemories(
+        context: string | null = null,
+        prompt: string | null = null
+    ): string {
+        let result_array: string[] = [];
+
+        // Drop memory entries outside of the set bound
+        const max_mem =
+            wAIfu.state!.config.memory.max_short_term_memory_entries.value;
+        while (this.#memories.length > max_mem) this.#memories.shift();
+
         let long = this.getLongTerm();
         let short = this.getShortTerm();
 
-        let temp_full_prompt = `${long}\n${short}\n${context || ''}\n${prompt || ''}`.toLowerCase();
-        let contextual_memory: string|null = null;
-        next_memory: for (let mem_entry of wAIfu.state!.config.memory.contextual_memories.value) {
+        result_array.push(
+            `----\nDate: ${new Date().toLocaleDateString("en", {
+                day: "numeric",
+                month: "long",
+                weekday: "long",
+                year: "numeric",
+            })}\n***\n`
+        );
+
+        result_array = result_array.concat(long, short);
+
+        const chardef_index = result_array.length - 6;
+        insertInArray<string>(
+            this.getCharacterDef(),
+            chardef_index,
+            result_array
+        );
+
+        const context_index = result_array.length - 2;
+        if (context !== null) {
+            if (context.endsWith("\n"))
+                context = context.slice(0, context.length - 2);
+            insertInArray<string>(
+                `----\n${context}\n***\n`,
+                context_index,
+                result_array
+            );
+        }
+
+        if (prompt !== null) result_array.push(prompt);
+
+        const final_prompt = result_array.join("");
+        const final_prompt_lower = final_prompt.toLowerCase();
+
+        const contextual_memory: string[] = [];
+
+        next_memory: for (let mem_entry of wAIfu.state!.config.memory
+            .contextual_memories.value) {
             for (let keyword of mem_entry.keywords) {
-                if (temp_full_prompt.includes(keyword.toLowerCase()) === false) continue;
-                if (contextual_memory === null) contextual_memory = '';
-                contextual_memory += `----\n${mem_entry.content}\n`;
+                if (
+                    final_prompt_lower.includes(keyword.toLowerCase()) === false
+                )
+                    continue;
+                contextual_memory.push(`----\n${mem_entry.content}\n`);
                 continue next_memory;
             }
         }
-        
-        if (long.endsWith('\n') === false) {
-            long = `${long}\n`;
-        }
 
-        if (short.endsWith('\n') === false) {
-            short = `${short}\n`;
-        }
-
-        if (contextual_memory !== null)
-            result += contextual_memory;
-
-        result += long;
-        
-        if (short !== '\n')
-            result += short;
-    
-        if (context !== null)
-            result += `{ ${context} }\n`;
-    
-        if (prompt !== null)
-            result += prompt;
-
-        return result;
+        return contextual_memory.join("") + final_prompt;
     }
 
-    addMemory(new_memory: string) {
+    addMemory(new_memory: string): void {
         this.#memories.push(new_memory);
     }
 
-    clear() {
+    clear(): void {
         this.#memories = [];
     }
-
 }

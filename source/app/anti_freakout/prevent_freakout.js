@@ -6,7 +6,7 @@ const check_for_spam_1 = require("../moderation/check_for_spam");
 function preventFreakout(text) {
     let ret_val = text;
     let modified = false;
-    const regex = /(.)\1{2,}/g;
+    const regex = /(.)\1{3,}/g;
     let results = text.matchAll(regex);
     for (let match of results) {
         ret_val = ret_val.replace(match[0], match[1] + match[1] + match[1]);

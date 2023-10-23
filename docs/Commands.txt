@@ -1,0 +1,11 @@
+TAGS[console,commands]
+TITLE[Available Commands]
+Commands:
+• !help               | Prints a list of commands to the console
+• !say <TEXT>         | Speaks text using character's TTS
+• !reset              | Clears short-term memory
+• !memory             | Prints current memory to console
+• !reload             | Reloads program and plugins
+• !sing <SONG NAME>   | Sings preprocessed file, see 'Singing of preprocessed audio files' tutorial on github.
+• !sing_random        | Sings random preprocessed file picked from the userdata/songs folder.
+• !clear_queue        | Clears the input/command queue.
