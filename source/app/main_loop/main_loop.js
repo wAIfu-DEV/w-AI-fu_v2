@@ -132,6 +132,7 @@ async function mainLoop_impl() {
         repetition_penalty: 1,
         max_output_length: 2,
         length_penalty: -1,
+        use_base_model: true,
     });
     if (Waifu_1.wAIfu.state?.config.behaviour.try_prevent_freakouts.value === true) {
         response.text = (0, prevent_freakout_1.preventFreakout)(response.text);

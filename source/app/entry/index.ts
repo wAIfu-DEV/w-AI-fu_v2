@@ -10,15 +10,20 @@ import { freeDependencies } from "../dependencies/dependency_freeing";
 import { freePlugins } from "../plugins/free_plugins";
 import { checkUpdates } from "../update/should_update";
 import { checkPythonInstall } from "../check_python/check_python";
+import { TwitchEventSubs } from "../twitch/twitch_eventsub";
+import { shouldUseEventSub } from "../twitch/should_use_eventsub";
 
 /**
  * @deprecated THIS FUNCTION IS ALREADY BEING CALLED AT PROCESS EXIT,
  *             DO NOT CALL DURING PROCESS EXECUTION.
  */
 export async function exit(): Promise<void> {
+    IO.quietPrint("Exiting w-AI-fu...");
     for (let plugin of wAIfu.plugins) plugin.onQuit();
     freePlugins(wAIfu.plugins);
     await freeDependencies(wAIfu.dependencies!);
+    if (wAIfu.dependencies?.twitch_eventsub !== undefined)
+        wAIfu.dependencies.twitch_eventsub.free();
     wAIfu.dependencies?.ui?.free();
     IO.setClosedCaptions("", "");
     app.exit();
@@ -85,6 +90,12 @@ export async function main(): Promise<void> {
 
     IO.debug("Checking for updates...");
     checkUpdates();
+
+    if (shouldUseEventSub() === true) {
+        IO.debug("Loading Twitch EventSub API...");
+        wAIfu.dependencies.twitch_eventsub = new TwitchEventSubs();
+        await wAIfu.dependencies.twitch_eventsub.initialize();
+    }
 
     IO.debug("Initialization done.");
     while (true) await wAIfu.mainLoop();

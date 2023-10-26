@@ -15,5 +15,6 @@ class LlmGenerationSettings {
     repetition_penalty = 2;
     max_output_length = 80;
     length_penalty = -0.25;
+    use_base_model = false;
 }
 exports.LlmGenerationSettings = LlmGenerationSettings;

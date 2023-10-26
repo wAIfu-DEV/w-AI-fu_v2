@@ -3,21 +3,20 @@ import { Message } from "../types/Message";
 import { LiveChat } from "./live_chat_interface";
 import { wAIfu } from "../types/Waifu";
 import { Result } from "../types/Result";
-import { TwitchEventSubs } from "../twitch/twitch_eventsub";
 import { IO } from "../io/io";
 import { removeNonAsciiSymbols } from "../sanitize/sanitize";
 import { handleCommand } from "../commands/command_handler";
 
+type TwitchMessage = { message: Message; metadata: string };
+
 export class LiveChatTwitch implements LiveChat {
     #websocket: WebSocket;
-    #enventsub: TwitchEventSubs;
 
-    #buffer: { message: Message; metadata: string }[] = [];
-    #prioritized_buffer: { message: Message; metadata: string }[] = [];
+    #buffer: TwitchMessage[] = [];
+    #prioritized_buffer: TwitchMessage[] = [];
 
     constructor() {
         this.#websocket = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
-        this.#enventsub = new TwitchEventSubs();
     }
 
     initialize(): Promise<void> {
@@ -45,16 +44,12 @@ export class LiveChatTwitch implements LiveChat {
             this.#websocket.on("message", (data: WebSocket.RawData) => {
                 if (resolved === false) {
                     resolved = true;
-                    this.#enventsub.connectTwitchEventSub();
-                    this.#enventsub.on("reconnect", () => {
-                        this.#enventsub = new TwitchEventSubs();
-                    });
                     IO.debug("Loaded LiveChatTwitch.");
                     resolve();
                 }
 
                 let data_str = data.toString("utf8");
-                IO.debug(data_str);
+                IO.debug("Twitch:", data_str);
                 if (data_str.includes("PING")) {
                     this.#websocket.send("PONG");
                     return;
@@ -96,7 +91,6 @@ export class LiveChatTwitch implements LiveChat {
                 this.#websocket.close();
             }
             this.#websocket.removeAllListeners();
-            this.#enventsub.free();
             resolve();
         });
     }
@@ -124,8 +118,7 @@ export class LiveChatTwitch implements LiveChat {
 
     #policyLatestBuffered(): Result<Message, null> {
         while (true) {
-            let content: { message: Message; metadata: string } | undefined =
-                undefined;
+            let content: TwitchMessage | undefined = undefined;
             if (this.#prioritized_buffer.length !== 0) {
                 content = this.#prioritized_buffer.shift();
             } else {
@@ -142,8 +135,7 @@ export class LiveChatTwitch implements LiveChat {
 
     #policyLatest(): Result<Message, null> {
         while (true) {
-            let content: { message: Message; metadata: string } | undefined =
-                undefined;
+            let content: TwitchMessage | undefined = undefined;
             if (this.#prioritized_buffer.length !== 0) {
                 content = this.#prioritized_buffer.shift();
             } else {
@@ -159,8 +151,7 @@ export class LiveChatTwitch implements LiveChat {
 
     #policyAll(): Result<Message, null> {
         while (true) {
-            let content: { message: Message; metadata: string } | undefined =
-                undefined;
+            let content: TwitchMessage | undefined = undefined;
             if (this.#prioritized_buffer.length !== 0) {
                 content = this.#prioritized_buffer.shift();
             } else {
@@ -174,7 +165,7 @@ export class LiveChatTwitch implements LiveChat {
     }
 
     #parseMessage(str: string): {
-        msg: { message: Message; metadata: string };
+        msg: TwitchMessage;
         prioritized: boolean;
     } | null {
         let matches =

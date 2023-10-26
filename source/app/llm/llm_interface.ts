@@ -23,4 +23,5 @@ export class LlmGenerationSettings {
     repetition_penalty: number = 2;
     max_output_length: number = 80;
     length_penalty: number = -0.25;
+    use_base_model: boolean = false;
 }

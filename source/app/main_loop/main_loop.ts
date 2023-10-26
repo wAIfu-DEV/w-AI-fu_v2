@@ -193,6 +193,7 @@ export async function mainLoop_impl(): Promise<void> {
                 repetition_penalty: 1,
                 max_output_length: 2,
                 length_penalty: -1,
+                use_base_model: true,
             }
         );
 

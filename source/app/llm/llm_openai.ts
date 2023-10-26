@@ -76,7 +76,7 @@ export class LargeLanguageModelOpenAI implements LargeLanguageModel {
                 ].value;
 
             let model =
-                custom_model === ""
+                custom_model === "" || settings.use_base_model === true
                     ? wAIfu.state!.config.large_language_model.openai_model
                           .value
                     : custom_model;

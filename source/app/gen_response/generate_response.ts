@@ -27,6 +27,7 @@ export async function generateResponse(
             repetition_penalty: llm_cfg.repetition_penalty.value,
             max_output_length: llm_cfg.max_output_length.value,
             length_penalty: llm_cfg.length_penalty.value,
+            use_base_model: false,
         });
 
         if (llm_response.success === false) {
@@ -63,8 +64,8 @@ export async function generateResponse(
 
     return {
         text: is_filtered
-            ? wAIfu.state?.config.moderation.censor_placeholder.value!
-            : "Oops something went wrong with my AI.",
+            ? wAIfu.state?.config.moderation.censor_placeholder.value! + "\n"
+            : "Oops something went wrong with my AI.\n",
         filtered: false,
     };
 }

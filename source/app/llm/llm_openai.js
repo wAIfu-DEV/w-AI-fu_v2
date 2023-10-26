@@ -40,7 +40,7 @@ class LargeLanguageModelOpenAI {
             };
             setTimeout(timeout, GENERATION_TIMEOUT_MS);
             let custom_model = Waifu_1.wAIfu.state.config.large_language_model["fine-tuned_gpt3.5_model_name"].value;
-            let model = custom_model === ""
+            let model = custom_model === "" || settings.use_base_model === true
                 ? Waifu_1.wAIfu.state.config.large_language_model.openai_model
                     .value
                 : custom_model;

@@ -39,23 +39,7 @@ export class Memory {
         let long = this.getLongTerm();
         let short = this.getShortTerm();
 
-        result_array.push(
-            `----\nDate: ${new Date().toLocaleDateString("en", {
-                day: "numeric",
-                month: "long",
-                weekday: "long",
-                year: "numeric",
-            })}\n***\n`
-        );
-
         result_array = result_array.concat(long, short);
-
-        const chardef_index = result_array.length - 6;
-        insertInArray<string>(
-            this.getCharacterDef(),
-            chardef_index,
-            result_array
-        );
 
         const context_index = result_array.length - 2;
         if (context !== null) {
@@ -67,6 +51,13 @@ export class Memory {
                 result_array
             );
         }
+
+        const chardef_index = result_array.length - 6;
+        insertInArray<string>(
+            this.getCharacterDef(),
+            chardef_index,
+            result_array
+        );
 
         if (prompt !== null) result_array.push(prompt);
 
@@ -86,6 +77,15 @@ export class Memory {
                 continue next_memory;
             }
         }
+
+        contextual_memory.push(
+            `----\nDate: ${new Date().toLocaleDateString("en", {
+                day: "numeric",
+                month: "long",
+                weekday: "long",
+                year: "numeric",
+            })}\n***\n`
+        );
 
         return contextual_memory.join("") + final_prompt;
     }

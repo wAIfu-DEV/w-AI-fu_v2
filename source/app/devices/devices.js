@@ -33,8 +33,11 @@ function getDevices() {
         shell: false,
     });
     let err = proc.stderr;
-    if (err !== null)
-        io_1.IO.error(err.toString("utf8"));
+    if (err !== null) {
+        let err_str = err.toString("utf8");
+        if (err_str !== "")
+            io_1.IO.error(err_str);
+    }
     let output = proc.stdout;
     return JSON.parse(output.toString("utf8"));
 }

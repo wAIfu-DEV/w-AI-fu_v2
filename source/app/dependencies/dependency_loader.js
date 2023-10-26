@@ -94,6 +94,6 @@ async function loadDependencies(config) {
         live_chat.initialize(),
     ]);
     io_1.IO.debug(`LLM: ${llm_provider}, TTS: ${tts_provider}, STT: ${Waifu_1.wAIfu.state.config.speech_to_text.stt_provider.value}, LIVE: ${live_chat_provider}`);
-    return new dependencies_1.Dependencies(input_sys, llm, tts, live_chat, undefined, vts);
+    return new dependencies_1.Dependencies(input_sys, llm, tts, live_chat, vts, undefined, undefined);
 }
 exports.loadDependencies = loadDependencies;

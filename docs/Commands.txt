@@ -9,3 +9,4 @@ Commands:
 • !sing <SONG NAME>   | Sings preprocessed file, see 'Singing of preprocessed audio files' tutorial on github.
 • !sing_random        | Sings random preprocessed file picked from the userdata/songs folder.
 • !clear_queue        | Clears the input/command queue.
+• !playlist           | Plays each song inside the 'Playlist' field and waits for the set time between songs.

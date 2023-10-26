@@ -114,5 +114,13 @@ export async function loadDependencies(config: Config): Promise<Dependencies> {
         }, LIVE: ${live_chat_provider}`
     );
 
-    return new Dependencies(input_sys, llm, tts, live_chat, undefined, vts);
+    return new Dependencies(
+        input_sys,
+        llm,
+        tts,
+        live_chat,
+        vts,
+        undefined,
+        undefined
+    );
 }

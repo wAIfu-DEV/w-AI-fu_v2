@@ -8,18 +8,15 @@ const ws_1 = __importDefault(require("ws"));
 const Message_1 = require("../types/Message");
 const Waifu_1 = require("../types/Waifu");
 const Result_1 = require("../types/Result");
-const twitch_eventsub_1 = require("../twitch/twitch_eventsub");
 const io_1 = require("../io/io");
 const sanitize_1 = require("../sanitize/sanitize");
 const command_handler_1 = require("../commands/command_handler");
 class LiveChatTwitch {
     #websocket;
-    #enventsub;
     #buffer = [];
     #prioritized_buffer = [];
     constructor() {
         this.#websocket = new ws_1.default("wss://irc-ws.chat.twitch.tv:443");
-        this.#enventsub = new twitch_eventsub_1.TwitchEventSubs();
     }
     initialize() {
         return new Promise((resolve) => {
@@ -37,15 +34,11 @@ class LiveChatTwitch {
             this.#websocket.on("message", (data) => {
                 if (resolved === false) {
                     resolved = true;
-                    this.#enventsub.connectTwitchEventSub();
-                    this.#enventsub.on("reconnect", () => {
-                        this.#enventsub = new twitch_eventsub_1.TwitchEventSubs();
-                    });
                     io_1.IO.debug("Loaded LiveChatTwitch.");
                     resolve();
                 }
                 let data_str = data.toString("utf8");
-                io_1.IO.debug(data_str);
+                io_1.IO.debug("Twitch:", data_str);
                 if (data_str.includes("PING")) {
                     this.#websocket.send("PONG");
                     return;
@@ -79,7 +72,6 @@ class LiveChatTwitch {
                 this.#websocket.close();
             }
             this.#websocket.removeAllListeners();
-            this.#enventsub.free();
             resolve();
         });
     }

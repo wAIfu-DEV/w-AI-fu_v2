@@ -13,11 +13,16 @@ const dependency_freeing_1 = require("../dependencies/dependency_freeing");
 const free_plugins_1 = require("../plugins/free_plugins");
 const should_update_1 = require("../update/should_update");
 const check_python_1 = require("../check_python/check_python");
+const twitch_eventsub_1 = require("../twitch/twitch_eventsub");
+const should_use_eventsub_1 = require("../twitch/should_use_eventsub");
 async function exit() {
+    io_1.IO.quietPrint("Exiting w-AI-fu...");
     for (let plugin of Waifu_1.wAIfu.plugins)
         plugin.onQuit();
     (0, free_plugins_1.freePlugins)(Waifu_1.wAIfu.plugins);
     await (0, dependency_freeing_1.freeDependencies)(Waifu_1.wAIfu.dependencies);
+    if (Waifu_1.wAIfu.dependencies?.twitch_eventsub !== undefined)
+        Waifu_1.wAIfu.dependencies.twitch_eventsub.free();
     Waifu_1.wAIfu.dependencies?.ui?.free();
     io_1.IO.setClosedCaptions("", "");
     electron_1.app.exit();
@@ -69,6 +74,11 @@ async function main() {
     io_1.IO.bindToUI(Waifu_1.wAIfu.dependencies.ui);
     io_1.IO.debug("Checking for updates...");
     (0, should_update_1.checkUpdates)();
+    if ((0, should_use_eventsub_1.shouldUseEventSub)() === true) {
+        io_1.IO.debug("Loading Twitch EventSub API...");
+        Waifu_1.wAIfu.dependencies.twitch_eventsub = new twitch_eventsub_1.TwitchEventSubs();
+        await Waifu_1.wAIfu.dependencies.twitch_eventsub.initialize();
+    }
     io_1.IO.debug("Initialization done.");
     while (true)
         await Waifu_1.wAIfu.mainLoop();

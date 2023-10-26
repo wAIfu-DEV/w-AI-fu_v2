@@ -4,6 +4,7 @@ from pynput.keyboard import Key, Listener
 import pyaudio
 import wave
 import threading
+import time
 
 from websockets.sync.client import connect
 
@@ -91,13 +92,13 @@ def ptt_record_audio():
     paudio = pyaudio.PyAudio()
     channels = paudio.get_device_info_by_index(index)["maxInputChannels"]
     stream = paudio.open(format=FORMAT,
-                    channels=channels,
-                    rate=sample_rate,
-                    input=True,
-                    output=True,
-                    frames_per_buffer=chunk,
-                    input_device_index=index,
-                    output_device_index=None)
+                        channels=channels,
+                        rate=sample_rate,
+                        input=True,
+                        output=True,
+                        frames_per_buffer=chunk,
+                        input_device_index=index,
+                        output_device_index=None)
     frames = []
 
     print("Recording...")
@@ -151,12 +152,13 @@ def speech_recognition():
 
 
 def recognize_audio(audio: sr.AudioData, recognizer: sr.Recognizer, throw: bool):
-    global provider, ws, api_key
+    global provider, ws, api_key, stt_language
     text = ''
+    start_time = time.time()
     try:
         match(provider):
             case "google":
-                text = recognizer.recognize_google(audio)
+                text = recognizer.recognize_google(audio, language=stt_language)
             case "openai":
                 text = recognizer.recognize_whisper_api(audio, api_key=api_key)
     except sr.exceptions.SetupError as e:
@@ -175,6 +177,8 @@ def recognize_audio(audio: sr.AudioData, recognizer: sr.Recognizer, throw: bool)
         print("Could not contact audio recognition API.", file=sys.stderr)
         text = '...'
     ws.send(text)
+    print("Recognition took:", round((time.time() - start_time) * 1_000), "ms", file=sys.stdout)
+    sys.stdout.flush()
 
 
 if __name__ == "__main__":
