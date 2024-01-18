@@ -25,18 +25,17 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TextToSpeechNovelAI = void 0;
 const cproc = __importStar(require("child_process"));
+const crypto = __importStar(require("crypto"));
 const ws_1 = __importStar(require("ws"));
 const Waifu_1 = require("../types/Waifu");
 const Result_1 = require("../types/Result");
 const io_1 = require("../io/io");
 const tts_interface_1 = require("./tts_interface");
 const stream_captions_1 = require("../closed_captions/stream_captions");
-const GENERATION_TIMEOUT_MS = 10_000;
 class TextToSpeechNovelAI {
     #child_process;
     #websocket = new ws_1.default(null);
     #websocket_server;
-    #current_generations = 0;
     skip = false;
     constructor() {
         this.#child_process = cproc.spawn(Waifu_1.ENV.PYTHON_PATH, ["novel_tts.py"], {
@@ -66,7 +65,7 @@ class TextToSpeechNovelAI {
                 this.#websocket = socket;
                 this.#websocket.on("error", (err) => io_1.IO.print(err));
                 this.#websocket.send("");
-                io_1.IO.debug("Loaded TextToSpeechAzure.");
+                io_1.IO.debug("Loaded TextToSpeechNovelAI.");
                 resolve();
             });
         });
@@ -91,15 +90,24 @@ class TextToSpeechNovelAI {
             this.#child_process.kill(2);
         });
     }
-    async generateSpeech(text, options) {
-        await_connect: while (true) {
-            if (this.#websocket.readyState === ws_1.default.OPEN)
-                break await_connect;
-            await new Promise((resolve) => setTimeout(() => resolve(), 100));
+    #parseData(data, expected_id) {
+        let split_data = data.split(" ");
+        if (split_data[0] !== expected_id)
+            return null;
+        switch (split_data[1]) {
+            case "ERROR": {
+                let err_type = split_data[2];
+                let err_msg = split_data.slice(3, undefined).join(" ");
+                return new Result_1.Result(false, err_msg, err_type);
+            }
+            default: {
+                return new Result_1.Result(true, split_data[0], tts_interface_1.TTS_GEN_ERROR.NONE);
+            }
         }
-        this.#current_generations += 1;
-        let expected_id = this.#current_generations;
+    }
+    generateSpeech(text, options) {
         return new Promise((resolve) => {
+            let expected_id = crypto.randomUUID();
             let is_resolved = false;
             this.#websocket.send("GENERATE " +
                 JSON.stringify({
@@ -109,64 +117,45 @@ class TextToSpeechNovelAI {
                     },
                     concurrent_id: expected_id,
                 }));
+            const el = (ev) => {
+                if (is_resolved === true)
+                    return;
+                const result = this.#parseData(ev.data.toString("utf8"), expected_id);
+                if (result === null)
+                    return;
+                is_resolved = true;
+                resolve(result);
+                this.#websocket.removeEventListener("message", el);
+            };
             const timeout = () => {
                 if (is_resolved === true)
                     return;
                 is_resolved = true;
                 resolve(new Result_1.Result(false, "Timed out while waiting for TTS response.", tts_interface_1.TTS_GEN_ERROR.RESPONSE_TIMEOUT));
+                this.#websocket.removeEventListener("message", el);
                 return;
             };
-            setTimeout(timeout, GENERATION_TIMEOUT_MS);
-            const el = (ev) => {
-                if (is_resolved === true)
-                    return;
-                let split_data = ev.data.toString("utf8").split(" ");
-                if (split_data[0] !== String(expected_id))
-                    return;
-                this.#current_generations -= 1;
-                switch (split_data[1]) {
-                    case "ERROR":
-                        {
-                            let err_type = split_data[2];
-                            let err_msg = split_data
-                                .slice(3, undefined)
-                                .join(" ");
-                            is_resolved = true;
-                            resolve(new Result_1.Result(false, err_msg, err_type));
-                        }
-                        break;
-                    default: {
-                        let return_id = split_data.slice(1, undefined).join("");
-                        is_resolved = true;
-                        resolve(new Result_1.Result(true, return_id, tts_interface_1.TTS_GEN_ERROR.NONE));
-                    }
-                }
-                this.#websocket.removeEventListener("message", el);
-            };
+            setTimeout(timeout, Waifu_1.wAIfu.state.config.text_to_speech.timeout_seconds.value * 1_000);
             this.#websocket.addEventListener("message", el);
         });
     }
-    async playSpeech(id, options) {
-        await_connect: while (true) {
-            if (this.#websocket.readyState === ws_1.default.OPEN)
-                break await_connect;
-            await new Promise((resolve) => setTimeout(() => resolve(), 100));
-        }
-        this.#websocket.send("PLAY " +
-            JSON.stringify({
-                id: id,
-                options: {
-                    device: options.device,
-                    volume_modifier: options.volume_modifier,
-                },
-            }));
+    playSpeech(id, options) {
         return new Promise((resolve) => {
-            let resolved = false;
-            const el = () => {
-                if (resolved === true)
+            let is_resolved = false;
+            this.#websocket.send("PLAY " +
+                JSON.stringify({
+                    id: id,
+                    options: {
+                        device: options.device,
+                        volume_modifier: options.volume_modifier,
+                    },
+                }));
+            const el = (ev) => {
+                if (is_resolved === true)
                     return;
-                resolved = true;
-                this.#current_generations -= 1;
+                if (ev.data.toString("utf8") !== "PLAY DONE")
+                    return;
+                is_resolved = true;
                 resolve(new Result_1.Result(true, undefined, tts_interface_1.TTS_PLAY_ERROR.NONE));
                 this.#websocket.removeEventListener("message", el);
                 return;

@@ -699,7 +699,7 @@ hint:before {
 
 input[type="text"] {
     text-align: left;
-    width: 6rem;
+    width: 10rem;
     padding: 0rem 0.5rem;
     color: white;
     background-color: black;

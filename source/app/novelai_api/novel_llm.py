@@ -74,6 +74,7 @@ async def prepare_generate(payload, websocket, api_handler:API):
     parsed = json.loads(payload)
     prompt = parsed["prompt"]
     llm_params = parsed["config"]
+    id = parsed["id"]
     response = ''
     try:
         response = "TEXT " + await generate(prompt, llm_params, api_handler)
@@ -89,7 +90,7 @@ async def prepare_generate(payload, websocket, api_handler:API):
             case _:
                 print(e, file=sys.stderr)
                 response = "ERROR UNDEFINED " + str(e.args[2])
-    websocket.send(response)
+    websocket.send(id + " " + response)
 
 
 async def generate(custom_prompt, parameters, api_handler: API)-> str:

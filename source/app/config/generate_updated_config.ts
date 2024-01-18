@@ -1,6 +1,6 @@
-import { Config, ConfigField } from "./config";
+import { Config, IConfigField } from "./config";
 
-type Section = Record<string, ConfigField>;
+type Section = Record<string, IConfigField>;
 
 export function generateUpdatedConfig(old_config: Config): Config {
     const new_config = new Config();

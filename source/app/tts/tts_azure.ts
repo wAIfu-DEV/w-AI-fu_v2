@@ -8,7 +8,7 @@ import { Result } from "../types/Result";
 import {
     TTS_GEN_ERROR,
     TTS_PLAY_ERROR,
-    TextToSpeech,
+    ITextToSpeech,
     TtsGenerationSettings,
     TtsPlaySettings,
 } from "./tts_interface";
@@ -18,7 +18,7 @@ import { clearStreamedSubtitles } from "../closed_captions/stream_captions";
 
 const AUDIO_PATH = process.cwd() + "/source/app/audio/";
 
-export class TextToSpeechAzure implements TextToSpeech {
+export class TextToSpeechAzure implements ITextToSpeech {
     #azure_config;
     #player: cproc.ChildProcess;
 
@@ -129,8 +129,6 @@ export class TextToSpeechAzure implements TextToSpeech {
                 `<voice name="${params.voice.trim()}">` +
                 `<prosody pitch="${pitch_modifier}%">${sanitized_text.trim()}</prosody>` +
                 "</voice></speak>";
-
-            IO.print(ssml);
 
             const audio_config =
                 azure.AudioConfig.fromAudioFileOutput(file_path);

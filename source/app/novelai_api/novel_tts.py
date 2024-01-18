@@ -5,7 +5,6 @@ import wave
 import json
 import asyncio
 import threading
-import uuid
 
 from websockets.sync.client import connect
 
@@ -16,9 +15,7 @@ from boilerplate import API
 os.system('title w-AI-fu NovelAI TTS')
 
 audio = pyaudio.PyAudio()
-
 device_index = 0
-
 interrupt_next = False
 
 async def handle(message, websocket):
@@ -46,7 +43,8 @@ async def prepare_generate(payload, websocket):
     concurrent_id = params["concurrent_id"]
     response = ""
     try:
-        response = await generate_tts(speak=text, voice_seed=options["voice_seed"])
+        await generate_tts(speak=text, voice_seed=options["voice_seed"], UUID=concurrent_id)
+        response = "GEN DONE"
     except Exception as e:
         if (len(e.args) < 2):
             print(e, file=sys.stderr)
@@ -59,7 +57,7 @@ async def prepare_generate(payload, websocket):
             case _:
                 print(e, file=sys.stderr)
                 response = "ERROR UNDEFINED " + str(e.args[2])
-    websocket.send(str(concurrent_id) + " " + response)
+    websocket.send(concurrent_id + " " + response)
 
 async def prepare_play(payload, websocket):
     params = json.loads(payload)
@@ -71,7 +69,7 @@ async def prepare_play(payload, websocket):
         print(e, file=sys.stderr)
     websocket.send("PLAY DONE")
 
-async def generate_tts(speak, voice_seed)-> str:
+async def generate_tts(speak, voice_seed, UUID):
     async with API() as api_handler:
         api = api_handler.api
         text = speak
@@ -80,10 +78,8 @@ async def generate_tts(speak, voice_seed)-> str:
         opus = False
         version = 'v2'
         tts = await api.low_level.generate_voice(text, voice, seed, opus, version)
-        new_id = str(uuid.uuid4())
-        with open(f'audio/{new_id}.mp3', 'wb') as f:
+        with open(f'audio/{UUID}.mp3', 'wb') as f:
             f.write(tts)
-        return new_id
 
 def play_tts(file_id, device = None, volume_modifier = 10):
     global audio, interrupt_next, device_index

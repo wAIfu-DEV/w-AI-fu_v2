@@ -1,4 +1,4 @@
-import { retreiveCharacters } from "../characters/characters";
+import { retrieveAllCharacters } from "../characters/characters";
 import { CommandQueue } from "../commands/queue";
 import { Memory } from "../memory/memory";
 import { Auth } from "../auth/auth";
@@ -23,7 +23,7 @@ export class AppState {
         this.current_preset = Config.getPreset(this.presets);
         this.config = Config.importFromFile(this.current_preset);
         this.auth = Auth.importFromFile();
-        this.characters = retreiveCharacters();
+        this.characters = retrieveAllCharacters();
         this.devices = {};
         this.memory = new Memory();
         this.bad_words = getBadWords();

@@ -1,6 +1,6 @@
 import { Result } from "../types/Result";
 
-export interface LargeLanguageModel {
+export interface ILargeLanguageModel {
     initialize(): Promise<void>;
     free(): Promise<void>;
     generate(
@@ -19,6 +19,7 @@ export enum LLM_GEN_ERRORS {
 }
 
 export class LlmGenerationSettings {
+    character_name: string = "";
     temperature: number = 1;
     repetition_penalty: number = 2;
     max_output_length: number = 80;

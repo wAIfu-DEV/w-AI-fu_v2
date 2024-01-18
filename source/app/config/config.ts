@@ -62,6 +62,20 @@ export class Config {
             max: 100,
             value: 1,
         }),
+        templated_monologue_topics: new ConfigFieldList({
+            hint: "Topics picked randomly that will influence the generation of the monologue. Template: <CHARA>",
+            reload: false,
+            type: "list",
+            default: ["<CHARA> adds their insight on the topic."],
+            value: ["<CHARA> adds their insight on the topic."],
+        }),
+        force_monologue: new ConfigFieldBoolean({
+            hint: "Forces a monologue, even if input is available.",
+            reload: false,
+            type: "boolean",
+            default: false,
+            value: false,
+        }),
         try_prevent_freakouts: new ConfigFieldBoolean({
             hint: "Tries to prevent freakouts by altering response in order to keep the AI on track and sane.",
             reload: false,
@@ -91,8 +105,56 @@ export class Config {
             type: "number",
             default: 7,
             min: 1,
-            max: 20,
+            max: 50,
             value: 7,
+        }),
+        extend_with_summarized_memory: new ConfigFieldBoolean({
+            hint: "Extends the short-term memory by summarizing older memories instead of culling them. Entries will be added to the long-term memory, impacting the cost/tokens for concerned LLM providers.",
+            reload: false,
+            type: "boolean",
+            default: true,
+            value: true,
+        }),
+        max_summarized_memory_entries: new ConfigFieldNumber({
+            hint: "Number of summarized interactions to keep in memory. Has less impact than short-term memory, but is useful to keep track of the conversation. Impacts the cost/tokens for concerned LLM providers.",
+            reload: false,
+            type: "number",
+            default: 7,
+            min: 1,
+            max: 100,
+            value: 7,
+        }),
+        summarize_after_x_old_entries: new ConfigFieldNumber({
+            hint: "Number of entries to keep in a buffer before summarizing. The buffer is cleared after summarization. The buffer will be kept in memory while awaiting summarization, impacting the cost/tokens for concerned LLM providers.",
+            reload: false,
+            type: "number",
+            default: 3,
+            min: 1,
+            max: 20,
+            value: 3,
+        }),
+        store_summarized_memories_to_vectordb: new ConfigFieldBoolean({
+            hint: "Summarized memories will be stored in the vector database.",
+            reload: false,
+            type: "boolean",
+            default: true,
+            value: true,
+        }),
+        retrieve_memories_from_vectordb: new ConfigFieldBoolean({
+            hint: "Retreives memories from the vector database based on the current context. Entries will be added to the long-term memory, impacting the cost/tokens for concerned LLM providers.",
+            reload: false,
+            type: "boolean",
+            default: true,
+            value: true,
+        }),
+        vectordb_retrieval_amount: new ConfigFieldNumber({
+            hint: "Number of entries to query from the vector database. Entries will be added to the long-term memory, impacting the cost/tokens for concerned LLM providers.",
+            reload: false,
+            type: "number",
+            default: 5,
+            min: 1,
+            max: 100,
+            value: 5,
         }),
         contextual_memories: new ConfigFieldContextualMemoryList({
             hint: "Memories to be remembered based on context (i.e if encounters keyword)",
@@ -107,7 +169,7 @@ export class Config {
             hint: "What platform from which to receive messages and events.",
             reload: true,
             type: "select",
-            options: ["twitch", "youtube"],
+            options: ["twitch"],
             default: "twitch",
             value: "twitch",
         }),
@@ -131,12 +193,35 @@ export class Config {
             hint: "[Latest-Buffered]: Reads the latest chat message, if none is found reads next (older) message in a buffer of 4 messages. If buffer is empty, tries to monologue.\r\n[Latest]: Reads the latest chat message, if none is found tries to monolgue.\r\n[All]: Reads every chat message without exception.",
             reload: false,
             type: "select",
-            options: ["latest-buffered", "latest", "all"],
+            options: ["latest-buffered", "latest", "all", "weighted-buffered"],
             default: "latest-buffered",
             value: "latest-buffered",
         }),
+        message_buffer_size: new ConfigFieldNumber({
+            hint: 'Max size of the buffer for "buffered" chat reading modes.',
+            reload: false,
+            type: "number",
+            default: 4,
+            min: 0,
+            max: 50,
+            value: 4,
+        }),
         always_read_highlighted: new ConfigFieldBoolean({
             hint: "Highlighted messages will not be skipped and will be prioritized over other chat messages. (Might only work on Twitch)",
+            reload: false,
+            type: "boolean",
+            default: true,
+            value: true,
+        }),
+        prioritize_first_messages: new ConfigFieldBoolean({
+            hint: "Will prioritize messages from new viewers.",
+            reload: false,
+            type: "boolean",
+            default: true,
+            value: true,
+        }),
+        prioritize_returning_viewers_message: new ConfigFieldBoolean({
+            hint: "(Weighted only) Will prioritize the first message from returning viewers.",
             reload: false,
             type: "boolean",
             default: true,
@@ -146,6 +231,13 @@ export class Config {
     "moderation" = {
         filter_bad_words: new ConfigFieldBoolean({
             hint: "Checks the content of the character's speech and incoming chat messages for bad words.",
+            reload: true,
+            type: "boolean",
+            default: true,
+            value: true,
+        }),
+        filter_repetition: new ConfigFieldBoolean({
+            hint: "Prevent the character from repeating too much within the same message.",
             reload: true,
             type: "boolean",
             default: true,
@@ -197,7 +289,7 @@ export class Config {
     "devices" = {
         voice_input_device: new ConfigFieldSelect({
             hint: "Audio device from which to receive input, usually a microphone.",
-            reload: false,
+            reload: true,
             type: "select",
             options: [],
             default: "",
@@ -221,7 +313,7 @@ export class Config {
         }),
         alt_output_device: new ConfigFieldSelect({
             hint: "Audio device on which to play audio unrelated to TTS. Used for the instrumental track of songs.",
-            reload: false,
+            reload: true,
             type: "select",
             options: [],
             default: "",
@@ -236,6 +328,15 @@ export class Config {
             options: ["novelai", "openai"],
             default: "novelai",
             value: "novelai",
+        }),
+        timeout_seconds: new ConfigFieldNumber({
+            hint: "Number of seconds to wait before throwing a timeout error.",
+            reload: false,
+            type: "number",
+            default: 7,
+            min: 0,
+            max: 60,
+            value: 7,
         }),
         temperature: new ConfigFieldNumber({
             hint: "How creative the responses of the LLM should be.",
@@ -302,9 +403,18 @@ export class Config {
             hint: "Text-To-Speech AI provider.",
             reload: true,
             type: "select",
-            options: ["novelai", "azure"],
+            options: ["novelai", "azure", "novelai+rvc", "azure+rvc"],
             default: "novelai",
             value: "novelai",
+        }),
+        timeout_seconds: new ConfigFieldNumber({
+            hint: "Number of seconds to wait before throwing a timeout error.",
+            reload: false,
+            type: "number",
+            default: 7,
+            min: 0,
+            max: 60,
+            value: 7,
         }),
         volume_modifier_db: new ConfigFieldNumber({
             hint: "Modifies the volume of the TTS. Unit is dB.",
@@ -343,6 +453,13 @@ export class Config {
             default: "dev",
             value: "dev",
         }),
+        chatter_specific_voice: new ConfigFieldBoolean({
+            hint: "Uses chatter's username as seed for NovelAI's TTS voice. Only works with NovelAI",
+            reload: false,
+            type: "boolean",
+            default: false,
+            value: false,
+        }),
         azure_pitch_percentage: new ConfigFieldNumber({
             hint: "Modifier added to the pitch of the Azure TTS voice.",
             reload: false,
@@ -351,6 +468,22 @@ export class Config {
             max: 100,
             min: 0,
             value: 0,
+        }),
+        azure_narrator_pitch_percentage: new ConfigFieldNumber({
+            hint: "Modifier added to the pitch of the narrator's Azure TTS voice.",
+            reload: false,
+            type: "number",
+            default: 0,
+            max: 100,
+            min: 0,
+            value: 0,
+        }),
+        rvc_voice_cloning: new ConfigFieldBoolean({
+            hint: 'Uses RVC to run voice inference on top of the TTS output. RVC needs to be open with a loaded voice model. Only works with tts providers having "RVC" in their name.',
+            reload: false,
+            type: "boolean",
+            default: true,
+            value: true,
         }),
     };
     "speech_to_text" = {
@@ -481,8 +614,15 @@ export class Config {
             default: [],
             value: [],
         }),
+        listening_hotkey_sequence: new ConfigFieldList({
+            hint: "Hotkey sequence to call when reading out a chat message.",
+            reload: false,
+            type: "list",
+            default: [],
+            value: [],
+        }),
         singing_hotkey_sequence: new ConfigFieldList({
-            hint: "Hotkey sequence to call once connecting to VTS. Usually used to reset the animations and toggles.",
+            hint: "Hotkey sequence to call after starting to sing.",
             reload: false,
             type: "list",
             default: [],
@@ -521,6 +661,90 @@ export class Config {
             value: [],
         }),
     };
+    "twitch" = {
+        minimum_cheer_amount_reaction: new ConfigFieldNumber({
+            hint: "Minimum of bits the character will start reacting to. Prevents spamming of 1 bits.",
+            reload: false,
+            type: "number",
+            default: 5,
+            max: 99999,
+            min: 0,
+            value: 5,
+        }),
+        minimum_raid_viewers_amount_reaction: new ConfigFieldNumber({
+            hint: "Minimum of viewers a raid needs for the character to react to it.",
+            reload: false,
+            type: "number",
+            default: 5,
+            max: 99999,
+            min: 0,
+            value: 5,
+        }),
+        thank_new_followers: new ConfigFieldBoolean({
+            hint: "The character will thank new followers.",
+            reload: false,
+            type: "boolean",
+            default: true,
+            value: true,
+        }),
+        thank_new_subscribtions: new ConfigFieldBoolean({
+            hint: "The character will thank new subscribers.",
+            reload: false,
+            type: "boolean",
+            default: true,
+            value: true,
+        }),
+        thank_new_cheers: new ConfigFieldBoolean({
+            hint: "The character will thank new bits.",
+            reload: false,
+            type: "boolean",
+            default: true,
+            value: true,
+        }),
+        thank_raids: new ConfigFieldBoolean({
+            hint: "The character will thank new raids.",
+            reload: false,
+            type: "boolean",
+            default: true,
+            value: true,
+        }),
+        follower_thanking_template: new ConfigFieldString({
+            hint: "Template string that will be used to thank new followers. Template: <USER>",
+            reload: false,
+            type: "string",
+            default: "Thank you <USER> for following my channel!",
+            value: "Thank you <USER> for following my channel!",
+        }),
+        subscriber_thanking_template: new ConfigFieldString({
+            hint: "Template string that will be used to thank new subscribers. Templates: <USER>, <TIER>",
+            reload: false,
+            type: "string",
+            default: "Thank you <USER> for your tier <TIER> sub to my channel!",
+            value: "Thank you <USER> for your tier <TIER> sub to my channel!",
+        }),
+        gifted_sub_thanking_template: new ConfigFieldString({
+            hint: "Template string that will be used to thank new subscribers. Templates: <USER>, <AMOUNT>, <TIER>",
+            reload: false,
+            type: "string",
+            default:
+                "Thank you <USER> for your <AMOUNT> tier <TIER> gifted subs to my channel!",
+            value: "Thank you <USER> for your <AMOUNT> tier <TIER> gifted subs to my channel!",
+        }),
+        cheer_thanking_template: new ConfigFieldString({
+            hint: "Template string that will be used to thank new bits. Template: <USER>, <AMOUNT>",
+            reload: false,
+            type: "string",
+            default: "Thank you <USER> for the <AMOUNT> bits!",
+            value: "Thank you <USER> for the <AMOUNT> bits!",
+        }),
+        raid_thanking_template: new ConfigFieldString({
+            hint: "Template string that will be used to thank new raids. Template: <FROM>, <VIEWERS>",
+            reload: false,
+            type: "string",
+            default: "Thank you <FROM> and <VIEWERS> viewers for the raid!",
+            value: "Thank you <FROM> and <VIEWERS> viewers for the raid!",
+        }),
+    };
 
     /** @see `./import_config.ts` */
     static importFromFile = importFromFile_impl;
@@ -530,7 +754,7 @@ export class Config {
     static getPreset = getPreset_impl;
 }
 
-export interface ConfigField {
+export interface IConfigField {
     hint: string;
     reload: boolean;
     type: string;
@@ -538,7 +762,7 @@ export interface ConfigField {
     value: any;
 }
 
-export class ConfigFieldString implements ConfigField {
+export class ConfigFieldString implements IConfigField {
     constructor(args: ConfigFieldString) {
         this.hint = args.hint;
         this.reload = args.reload;
@@ -554,7 +778,7 @@ export class ConfigFieldString implements ConfigField {
     "value": string = "";
 }
 
-export class ConfigFieldBoolean implements ConfigField {
+export class ConfigFieldBoolean implements IConfigField {
     constructor(args: ConfigFieldBoolean) {
         this.hint = args.hint;
         this.reload = args.reload;
@@ -570,7 +794,7 @@ export class ConfigFieldBoolean implements ConfigField {
     "value": boolean = false;
 }
 
-export class ConfigFieldNumber implements ConfigField {
+export class ConfigFieldNumber implements IConfigField {
     constructor(args: ConfigFieldNumber) {
         this.hint = args.hint;
         this.reload = args.reload;
@@ -590,7 +814,7 @@ export class ConfigFieldNumber implements ConfigField {
     "min": number = 0;
 }
 
-export class ConfigFieldSelect implements ConfigField {
+export class ConfigFieldSelect implements IConfigField {
     constructor(args: ConfigFieldSelect) {
         this.hint = args.hint;
         this.reload = args.reload;
@@ -608,7 +832,7 @@ export class ConfigFieldSelect implements ConfigField {
     "options": string[] = [];
 }
 
-export class ConfigFieldList implements ConfigField {
+export class ConfigFieldList implements IConfigField {
     constructor(args: ConfigFieldList) {
         this.hint = args.hint;
         this.reload = args.reload;
@@ -624,7 +848,7 @@ export class ConfigFieldList implements ConfigField {
     "value": string[] = [];
 }
 
-export class ConfigFieldVtsEmotionList implements ConfigField {
+export class ConfigFieldVtsEmotionList implements IConfigField {
     constructor(args: ConfigFieldVtsEmotionList) {
         this.hint = args.hint;
         this.reload = args.reload;
@@ -640,7 +864,7 @@ export class ConfigFieldVtsEmotionList implements ConfigField {
     "value": VtsEmotion[] = [];
 }
 
-export class ConfigFieldVtsKeywordTriggersList implements ConfigField {
+export class ConfigFieldVtsKeywordTriggersList implements IConfigField {
     constructor(args: ConfigFieldVtsKeywordTriggersList) {
         this.hint = args.hint;
         this.reload = args.reload;
@@ -668,7 +892,7 @@ export class VtsKeywordTriggers {
     "hotkey_sequence": string[] = [];
 }
 
-export class ConfigFieldContextualMemoryList implements ConfigField {
+export class ConfigFieldContextualMemoryList implements IConfigField {
     constructor(args: ConfigFieldContextualMemoryList) {
         this.hint = args.hint;
         this.reload = args.reload;

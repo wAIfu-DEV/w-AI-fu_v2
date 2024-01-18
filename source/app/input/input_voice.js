@@ -39,6 +39,7 @@ class InputSystemVoice {
     #child_process;
     #websocket_server;
     #websocket = new ws_1.default(null);
+    input_text = "";
     constructor() {
         this.#cli_input_interface = readline.createInterface(process.stdin, process.stdout);
         this.#interrupt_next = false;
@@ -68,7 +69,6 @@ class InputSystemVoice {
             host: "127.0.0.1",
             port: 8711,
         });
-        io_1.IO.debug("Loaded InputSystemVoice.");
     }
     async initialize() {
         this.#cli_input_interface.removeAllListeners();
@@ -80,10 +80,17 @@ class InputSystemVoice {
                 this.#websocket = socket;
                 this.#websocket.on("error", (err) => io_1.IO.print(err));
                 this.#websocket.on("message", (data) => {
+                    let text = data.toString("utf8");
+                    if (text == "") {
+                        Waifu_1.wAIfu.dependencies?.tts.interrupt();
+                        return;
+                    }
+                    this.input_text += text + " ";
                     Waifu_1.wAIfu.dependencies?.tts.interrupt();
-                    Waifu_1.wAIfu.state.command_queue.pushFront(data.toString("utf8"));
+                    Waifu_1.wAIfu.state.command_queue.pushFront(this.input_text);
                 });
                 this.#websocket.send("");
+                io_1.IO.debug("Loaded InputSystemVoice.");
                 resolve();
             });
         });

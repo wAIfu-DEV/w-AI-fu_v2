@@ -1,7 +1,7 @@
 import * as readline from "readline";
 import * as cproc from "child_process";
 
-import { InputSystem, REJECT_REASON } from "./input_interface";
+import { IInputSystem, REJECT_REASON } from "./input_interface";
 import { ENV, wAIfu } from "../types/Waifu";
 import { Result } from "../types/Result";
 import { Message } from "../types/Message";
@@ -10,13 +10,15 @@ import { IO } from "../io/io";
 
 import WebSocket, { WebSocketServer } from "ws";
 
-export class InputSystemVoice implements InputSystem {
+export class InputSystemVoice implements IInputSystem {
     #cli_input_interface: readline.Interface;
     #interrupt_next: boolean;
 
     #child_process: cproc.ChildProcess;
     #websocket_server: WebSocketServer;
     #websocket: WebSocket = new WebSocket(null);
+
+    input_text: string = "";
 
     constructor() {
         this.#cli_input_interface = readline.createInterface(
@@ -60,8 +62,6 @@ export class InputSystemVoice implements InputSystem {
             host: "127.0.0.1",
             port: 8711,
         });
-
-        IO.debug("Loaded InputSystemVoice.");
     }
 
     async initialize(): Promise<void> {
@@ -76,12 +76,18 @@ export class InputSystemVoice implements InputSystem {
                 this.#websocket.on("error", (err: Error) => IO.print(err));
 
                 this.#websocket.on("message", (data: WebSocket.RawData) => {
+                    let text = data.toString("utf8");
+                    if (text == "") {
+                        wAIfu.dependencies?.tts.interrupt();
+                        return;
+                    }
+                    this.input_text += text + " ";
                     wAIfu.dependencies?.tts.interrupt();
-                    wAIfu.state!.command_queue.pushFront(data.toString("utf8"));
+                    wAIfu.state!.command_queue.pushFront(this.input_text);
                 });
 
                 this.#websocket.send("");
-
+                IO.debug("Loaded InputSystemVoice.");
                 resolve();
             });
         });

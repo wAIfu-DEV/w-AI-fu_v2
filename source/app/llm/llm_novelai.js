@@ -25,12 +25,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LargeLanguageModelNovelAI = void 0;
 const ws_1 = __importStar(require("ws"));
+const crypto = __importStar(require("crypto"));
 const cproc = __importStar(require("child_process"));
 const Result_1 = require("../types/Result");
 const llm_interface_1 = require("./llm_interface");
 const Waifu_1 = require("../types/Waifu");
 const io_1 = require("../io/io");
-const GENERATION_TIMEOUT_MS = 10_000;
 class LargeLanguageModelNovelAI {
     #child_process;
     #websocket = new ws_1.default(null);
@@ -88,37 +88,38 @@ class LargeLanguageModelNovelAI {
         });
     }
     async generate(prompt, args) {
-        await_connect: while (true) {
-            if (this.#websocket.readyState === ws_1.default.OPEN)
-                break await_connect;
-            await new Promise((resolve) => setTimeout(() => resolve(), 100));
-        }
-        args["model"] =
-            Waifu_1.wAIfu.state.config.large_language_model.novelai_model.value;
-        this.#websocket.send("GENERATE " +
-            JSON.stringify({
-                prompt: prompt,
-                config: args,
-            }));
         return new Promise((resolve) => {
             let is_resolved = false;
+            const expected_id = crypto.randomUUID();
+            args["model"] =
+                Waifu_1.wAIfu.state.config.large_language_model.novelai_model.value;
+            this.#websocket.send("GENERATE " +
+                JSON.stringify({
+                    prompt: prompt + args.character_name + ":",
+                    config: args,
+                    id: expected_id,
+                }));
             const timeout = () => {
                 if (is_resolved === true)
                     return;
                 is_resolved = true;
                 resolve(new Result_1.Result(false, "Timed out while waiting for LLM response.", llm_interface_1.LLM_GEN_ERRORS.RESPONSE_TIMEOUT));
             };
-            setTimeout(timeout, GENERATION_TIMEOUT_MS);
+            setTimeout(timeout, Waifu_1.wAIfu.state.config.large_language_model.timeout_seconds.value *
+                1_000);
             const el = (ev) => {
                 let resp = ev.data.toString("utf8");
                 let split_data = resp.split(" ");
-                let prefix = split_data[0];
+                let id = split_data[0];
+                if (id !== expected_id)
+                    return;
+                let prefix = split_data[1];
                 let result;
                 switch (prefix) {
                     case "TEXT":
                         {
                             let payload = split_data
-                                .slice(1, undefined)
+                                .slice(2, undefined)
                                 .join(" ");
                             if (/\n$/g.test(payload) === false) {
                                 payload += "\n";
@@ -130,7 +131,7 @@ class LargeLanguageModelNovelAI {
                         {
                             let err_type = split_data[1];
                             let err_msg = split_data
-                                .slice(2, undefined)
+                                .slice(3, undefined)
                                 .join(" ");
                             result = new Result_1.Result(false, err_msg, err_type);
                         }

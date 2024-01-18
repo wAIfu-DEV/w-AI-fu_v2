@@ -7,12 +7,14 @@ import { playSongPreprocessed } from "../singing/sing_pproc";
 import { getCurrentCharacter } from "../characters/characters";
 import { pickRandomSong } from "../singing/pick_random_song";
 import { startPlaylist } from "../singing/playlist";
+import { formatStampedMemory } from "../memory/format_ltm";
 
 export enum COMMAND_TYPE {
     HELP = "!help",
     SAY = "!say",
     RESET = "!reset",
     MEMORY = "!memory",
+    MEMORY_PARSED = "!mem_parsed",
     RELOAD = "!reload",
     SING = "!sing",
     SING_RANDOM = "!sing_random",
@@ -20,12 +22,20 @@ export enum COMMAND_TYPE {
     TEST_VOICE = "!test_voice",
     TEST_DEVICE = "!test_device",
     PLAYLIST = "!playlist",
+    MEM_ADD = "!mem_add",
+    VDB_STORE = "!vdb_store",
+    VDB_QUERY = "!vdb_query",
+    VDB_DUMP = "!vdb_dump",
+    VDB_CLEAR = "!vdb_clear",
+    VDB_CLEAR_CONFIRM = "!vdb_clear_confirm",
 }
 
 export enum HANDLE_STATUS {
     HANDLED,
     UNHANDLED,
 }
+
+let last_song_name = "";
 
 /**
  * Checks input for commands and handle it, else return.
@@ -45,6 +55,9 @@ export async function handleCommand(
 
     if (trusted === true)
         IO.print(wAIfu.state?.config._.user_name.value + ">", command);
+
+    // Remove control characters
+    command = command.replaceAll(/\u00A0/g, " ");
 
     const split_command = command.split(" ");
     const prefix = split_command[0];
@@ -70,11 +83,12 @@ export async function handleCommand(
                     payload.trim(),
                     {
                         voice: getCurrentCharacter().voice,
+                        is_narrator: false,
                     }
                 );
 
                 if (id_result?.success === false) {
-                    IO.print("Failed to generate speech.");
+                    IO.warn("Failed to generate speech.");
                     return HANDLE_STATUS.HANDLED;
                 }
 
@@ -88,6 +102,12 @@ export async function handleCommand(
                     `${getCurrentCharacter().char_name}: ${payload.trim()}\n`
                 );
 
+                IO.setClosedCaptions(payload.trim(), {
+                    id: id,
+                    persistent: false,
+                    is_narrator: false,
+                });
+
                 await wAIfu.dependencies?.tts.playSpeech(id, {
                     device: getDeviceIndex(
                         wAIfu.state!.config.devices.tts_output_device.value
@@ -99,11 +119,67 @@ export async function handleCommand(
                 return HANDLE_STATUS.HANDLED;
             }
             case COMMAND_TYPE.MEMORY: {
+                let long_term_memories: string[] = [];
+
+                if (
+                    wAIfu.state?.config.memory.retrieve_memories_from_vectordb
+                        .value === true
+                ) {
+                    long_term_memories = (
+                        await wAIfu.dependencies!.ltm.query(
+                            wAIfu.state?.memory.getLastShortTermMemory(),
+                            5
+                        )
+                    ).map((v) => formatStampedMemory(v));
+                }
+
                 IO.print("Memory:");
                 let context: string | null =
                     wAIfu.state!.config._.context.value;
                 if (context === "") context = null;
-                IO.print(wAIfu.state!.memory.getMemories(context));
+                IO.print(
+                    wAIfu.state!.memory.getMemories(
+                        context,
+                        null,
+                        long_term_memories
+                    )
+                );
+                return HANDLE_STATUS.HANDLED;
+            }
+            case COMMAND_TYPE.MEMORY_PARSED: {
+                let long_term_memories: string[] = [];
+
+                if (
+                    wAIfu.state?.config.memory.retrieve_memories_from_vectordb
+                        .value === true
+                ) {
+                    long_term_memories = (
+                        await wAIfu.dependencies!.ltm.query(
+                            wAIfu.state?.memory.getLastShortTermMemory(),
+                            5
+                        )
+                    ).map((v) => formatStampedMemory(v));
+                }
+
+                IO.print("Memory:");
+                let context: string | null =
+                    wAIfu.state!.config._.context.value;
+                if (context === "") context = null;
+
+                const memory = wAIfu.state!.memory.getMemories(
+                    context,
+                    null,
+                    long_term_memories
+                );
+
+                // @ts-ignore
+                if (wAIfu.dependencies?.llm!["parsePrompt"] !== undefined) {
+                    // @ts-ignore
+                    IO.print(wAIfu.dependencies?.llm.parsePrompt(memory));
+                } else {
+                    IO.print(memory);
+                }
+
                 return HANDLE_STATUS.HANDLED;
             }
             case COMMAND_TYPE.RESET: {
@@ -115,11 +191,12 @@ export async function handleCommand(
                 return HANDLE_STATUS.HANDLED;
             }
             case COMMAND_TYPE.SING: {
+                last_song_name = payload;
                 await playSongPreprocessed(payload);
                 return HANDLE_STATUS.HANDLED;
             }
             case COMMAND_TYPE.SING_RANDOM: {
-                const picked_song = pickRandomSong();
+                const picked_song = pickRandomSong(last_song_name);
                 if (picked_song === "") return HANDLE_STATUS.HANDLED;
                 await playSongPreprocessed(picked_song);
                 return HANDLE_STATUS.HANDLED;
@@ -134,11 +211,12 @@ export async function handleCommand(
                     getRandomSentence(),
                     {
                         voice: payload.trim(),
+                        is_narrator: false,
                     }
                 );
 
                 if (id_result?.success === false) {
-                    IO.print("Failed to generate speech.");
+                    IO.warn("Failed to generate speech.");
                     return HANDLE_STATUS.HANDLED;
                 }
 
@@ -159,11 +237,12 @@ export async function handleCommand(
                     getRandomSentence(),
                     {
                         voice: getCurrentCharacter().voice,
+                        is_narrator: false,
                     }
                 );
 
                 if (id_result?.success === false) {
-                    IO.print("Failed to generate speech.");
+                    IO.warn("Failed to generate speech.");
                     return HANDLE_STATUS.HANDLED;
                 }
 
@@ -179,6 +258,45 @@ export async function handleCommand(
             }
             case COMMAND_TYPE.PLAYLIST: {
                 startPlaylist();
+                return HANDLE_STATUS.HANDLED;
+            }
+            case COMMAND_TYPE.MEM_ADD: {
+                wAIfu.state?.memory.addMemory(payload + "\n");
+                return HANDLE_STATUS.HANDLED;
+            }
+            case COMMAND_TYPE.VDB_STORE: {
+                wAIfu.dependencies?.ltm.store(payload.trim());
+                IO.print("Stored to vector database:", payload.trim());
+                return HANDLE_STATUS.HANDLED;
+            }
+            case COMMAND_TYPE.VDB_QUERY: {
+                const items =
+                    wAIfu.state!.config.memory.vectordb_retrieval_amount.value;
+                const result = await wAIfu.dependencies?.ltm.query(
+                    payload.trim(),
+                    items
+                );
+                IO.print("Vector database query result:");
+                IO.print(result);
+                return HANDLE_STATUS.HANDLED;
+            }
+            case COMMAND_TYPE.VDB_DUMP: {
+                wAIfu.dependencies?.ltm.dump();
+                return HANDLE_STATUS.HANDLED;
+            }
+            case COMMAND_TYPE.VDB_CLEAR: {
+                IO.warn(
+                    "WARNING: Reseting the vector database will get rid of all the memories stored inside with no way to get them back."
+                );
+                IO.warn(
+                    "If you wish to continue, please type:",
+                    COMMAND_TYPE.VDB_CLEAR_CONFIRM
+                );
+                return HANDLE_STATUS.HANDLED;
+            }
+            case COMMAND_TYPE.VDB_CLEAR_CONFIRM: {
+                wAIfu.dependencies?.ltm.clear();
+                IO.print("Cleared vector database.");
                 return HANDLE_STATUS.HANDLED;
             }
             default:

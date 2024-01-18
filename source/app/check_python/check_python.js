@@ -23,26 +23,49 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkPythonInstall = void 0;
+exports.isPythonInstalledPlusSetup = void 0;
 const cproc = __importStar(require("child_process"));
 const Waifu_1 = require("../types/Waifu");
 const io_1 = require("../io/io");
-function checkPythonInstall() {
+const force_install_py_deps_1 = require("./force_install_py_deps");
+const SUPPORTED_PY_INSTALL_PATHS = [
+    "\\Python309\\",
+    "\\Python310\\",
+    "\\Python311\\",
+    "\\Python312\\",
+];
+function isPythonInstalledPlusSetup() {
     try {
         cproc.execSync(`where ${Waifu_1.ENV.PYTHON_PATH}`);
         return true;
     }
     catch (e) { }
-    io_1.IO.debug("Could not find python env variable, trying with absolute path.");
-    try {
-        let local = process.env["LOCALAPPDATA"];
-        let path = local + "\\Programs\\Python\\Python310\\python.exe";
-        cproc.execSync(`"${path}" --version`);
-        Waifu_1.ENV.PYTHON_PATH = path;
-        return true;
+    io_1.IO.warn("Could not find python env variable, trying with absolute path.");
+    const LOCAL = process.env["LOCALAPPDATA"] + "\\Programs\\Python";
+    for (let py_path_fragment of SUPPORTED_PY_INSTALL_PATHS) {
+        let path = LOCAL + py_path_fragment;
+        if (trySetPyInstall(path))
+            return true;
     }
-    catch (e) { }
+    const ROOT = process.env["HOMEDRIVE"];
+    for (let py_path_fragment of SUPPORTED_PY_INSTALL_PATHS) {
+        let path = ROOT + py_path_fragment;
+        if (trySetPyInstall(path))
+            return true;
+    }
     io_1.IO.error('Failed to find a suitable python environment.\nPlease install Python (prefer v3.10.1X) from the official website: https://www.python.org/downloads/windows/\nMake sure to tick "Add python to PATH" during installation.');
     return false;
 }
-exports.checkPythonInstall = checkPythonInstall;
+exports.isPythonInstalledPlusSetup = isPythonInstalledPlusSetup;
+function trySetPyInstall(directory_path) {
+    try {
+        cproc.execSync(`"${directory_path}python.exe" --version`);
+        io_1.IO.warn(`Found viable python install at "${directory_path}",\ndownloading dependencies.`);
+        Waifu_1.ENV.PYTHON_PATH = directory_path + "python.exe";
+        (0, force_install_py_deps_1.installPyDepsWithPath)(directory_path + "Scripts\\");
+        return true;
+    }
+    catch (e) {
+        return false;
+    }
+}

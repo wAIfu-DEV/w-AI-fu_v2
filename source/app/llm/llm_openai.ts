@@ -3,7 +3,7 @@ import { Result } from "../types/Result";
 import { wAIfu } from "../types/Waifu";
 import {
     LLM_GEN_ERRORS,
-    LargeLanguageModel,
+    ILargeLanguageModel,
     LlmGenerationSettings,
 } from "./llm_interface";
 import { OpenAI } from "openai";
@@ -17,7 +17,7 @@ type GPTChatEntry = {
 
 const GENERATION_TIMEOUT_MS = 10_000 as const;
 
-export class LargeLanguageModelOpenAI implements LargeLanguageModel {
+export class LargeLanguageModelOpenAI implements ILargeLanguageModel {
     #openai_api: OpenAI;
 
     constructor() {
@@ -42,7 +42,7 @@ export class LargeLanguageModelOpenAI implements LargeLanguageModel {
         return new Promise(async (resolve) => {
             let is_resolved = false;
 
-            const parsed_prompt = this.#parsePrompt(prompt);
+            const parsed_prompt = this.parsePrompt(prompt);
 
             if (parsed_prompt === null) {
                 is_resolved = true;
@@ -145,7 +145,7 @@ export class LargeLanguageModelOpenAI implements LargeLanguageModel {
         });
     }
 
-    #parsePrompt(unparsed_prompt: string): GPTChatEntry[] | null {
+    parsePrompt(unparsed_prompt: string): GPTChatEntry[] | null {
         const character: Character = getCurrentCharacter();
         //const lines = String(unparsed_prompt).split(/\r\n|\n/g, undefined);
 
@@ -200,7 +200,6 @@ export class LargeLanguageModelOpenAI implements LargeLanguageModel {
             IO.warn('Could not parse line "' + content + '"');
             return null;
         }
-        msg_array.pop(); // removes added `NAME:` at end of file for support with all llms, not needed here
         return msg_array;
     }
 }

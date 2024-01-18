@@ -18,11 +18,11 @@ export class ChatterInfos {
 
         if (this.isJustReturningChatter(chatter_name)) {
             result.push(
-                `${chatter_name} just appeared in CHAT, ${char.char_name} should greet them.\n`
+                `${chatter_name} just appeared in CHAT, ${char.char_name} should greet them.`
             );
         }
 
         if (result.length === 0) return "";
-        return result.join("----\n");
+        return result.join("");
     }
 }

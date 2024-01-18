@@ -1,18 +1,17 @@
 import WebSocket, { WebSocketServer } from "ws";
 
+import * as crypto from "crypto";
 import * as cproc from "child_process";
 import { Result } from "../types/Result";
 import {
     LLM_GEN_ERRORS,
-    LargeLanguageModel,
+    ILargeLanguageModel,
     LlmGenerationSettings,
 } from "./llm_interface";
 import { ENV, wAIfu } from "../types/Waifu";
 import { IO } from "../io/io";
 
-const GENERATION_TIMEOUT_MS = 10_000 as const;
-
-export class LargeLanguageModelNovelAI implements LargeLanguageModel {
+export class LargeLanguageModelNovelAI implements ILargeLanguageModel {
     #child_process: cproc.ChildProcess;
     #websocket: WebSocket = new WebSocket(null);
     #websocket_server: WebSocketServer;
@@ -80,27 +79,22 @@ export class LargeLanguageModelNovelAI implements LargeLanguageModel {
         prompt: string,
         args: LlmGenerationSettings
     ): Promise<Result<string, LLM_GEN_ERRORS>> {
-        await_connect: while (true) {
-            if (this.#websocket.readyState === WebSocket.OPEN)
-                break await_connect;
-            await new Promise<void>((resolve) =>
-                setTimeout(() => resolve(), 100)
-            );
-        }
-
-        (args as any)["model"] =
-            wAIfu.state!.config.large_language_model.novelai_model.value;
-
-        this.#websocket.send(
-            "GENERATE " +
-                JSON.stringify({
-                    prompt: prompt,
-                    config: args,
-                })
-        );
-
         return new Promise((resolve) => {
             let is_resolved = false;
+
+            const expected_id = crypto.randomUUID();
+
+            (args as any)["model"] =
+                wAIfu.state!.config.large_language_model.novelai_model.value;
+
+            this.#websocket.send(
+                "GENERATE " +
+                    JSON.stringify({
+                        prompt: prompt + args.character_name + ":",
+                        config: args,
+                        id: expected_id,
+                    })
+            );
 
             const timeout = () => {
                 if (is_resolved === true) return;
@@ -113,18 +107,24 @@ export class LargeLanguageModelNovelAI implements LargeLanguageModel {
                     )
                 );
             };
-            setTimeout(timeout, GENERATION_TIMEOUT_MS);
+            setTimeout(
+                timeout,
+                wAIfu.state!.config.large_language_model.timeout_seconds.value *
+                    1_000
+            );
 
             const el = (ev: WebSocket.MessageEvent) => {
                 let resp = ev.data.toString("utf8");
                 let split_data = resp.split(" ");
-                let prefix = split_data[0];
+                let id = split_data[0];
+                if (id !== expected_id) return;
+                let prefix = split_data[1];
                 let result: Result<string, LLM_GEN_ERRORS>;
                 switch (prefix) {
                     case "TEXT":
                         {
                             let payload = split_data
-                                .slice(1, undefined)
+                                .slice(2, undefined)
                                 .join(" ");
                             if (/\n$/g.test(payload) === false) {
                                 payload += "\n";
@@ -140,7 +140,7 @@ export class LargeLanguageModelNovelAI implements LargeLanguageModel {
                         {
                             let err_type = split_data[1];
                             let err_msg = split_data
-                                .slice(2, undefined)
+                                .slice(3, undefined)
                                 .join(" ");
                             result = new Result(
                                 false,

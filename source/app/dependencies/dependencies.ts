@@ -1,28 +1,31 @@
-import { InputSystem } from "../input/input_interface";
-import { LiveChat } from "../live_chat/live_chat_interface";
-import { LargeLanguageModel } from "../llm/llm_interface";
-import { TextToSpeech } from "../tts/tts_interface";
+import { IInputSystem } from "../input/input_interface";
+import { ILiveChat } from "../live_chat/live_chat_interface";
+import { ILargeLanguageModel } from "../llm/llm_interface";
+import { ILongTermMemory } from "../memory/ltm_interface";
+import { ITextToSpeech } from "../tts/tts_interface";
 import { TwitchEventSubs } from "../twitch/twitch_eventsub";
 import { UserInterface } from "../ui_com/userinterface";
 import { VtubeStudioAPI } from "../vtube_studio/vtube_studio";
 
 export class Dependencies {
-    input_system: InputSystem;
-    llm: LargeLanguageModel;
-    tts: TextToSpeech;
-    live_chat: LiveChat;
+    input_system: IInputSystem;
+    llm: ILargeLanguageModel;
+    tts: ITextToSpeech;
+    live_chat: ILiveChat;
     ui: UserInterface | undefined = undefined;
     twitch_eventsub: TwitchEventSubs | undefined = undefined;
     vts: VtubeStudioAPI;
+    ltm: ILongTermMemory;
 
     needs_reload: boolean = false;
 
     constructor(
-        _in: InputSystem,
-        _llm: LargeLanguageModel,
-        _tts: TextToSpeech,
-        _live_chat: LiveChat,
+        _in: IInputSystem,
+        _llm: ILargeLanguageModel,
+        _tts: ITextToSpeech,
+        _live_chat: ILiveChat,
         _vts: VtubeStudioAPI,
+        _ltm: ILongTermMemory,
         _ui: UserInterface | undefined = undefined,
         _twitch_eventsub: TwitchEventSubs | undefined = undefined
     ) {
@@ -32,5 +35,6 @@ export class Dependencies {
         this.live_chat = _live_chat;
         this.ui = _ui;
         this.vts = _vts;
+        this.ltm = _ltm;
     }
 }

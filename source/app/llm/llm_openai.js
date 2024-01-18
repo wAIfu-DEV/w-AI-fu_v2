@@ -25,7 +25,7 @@ class LargeLanguageModelOpenAI {
     async generate(prompt, settings) {
         return new Promise(async (resolve) => {
             let is_resolved = false;
-            const parsed_prompt = this.#parsePrompt(prompt);
+            const parsed_prompt = this.parsePrompt(prompt);
             if (parsed_prompt === null) {
                 is_resolved = true;
                 resolve(new Result_1.Result(false, "Could not continue generation due to being enable to parse prompt.", llm_interface_1.LLM_GEN_ERRORS.INCORRECT_PROMPT));
@@ -88,7 +88,7 @@ class LargeLanguageModelOpenAI {
             return;
         });
     }
-    #parsePrompt(unparsed_prompt) {
+    parsePrompt(unparsed_prompt) {
         const character = (0, characters_1.getCurrentCharacter)();
         let msg_array = [];
         let matches = unparsed_prompt.matchAll(/(----[^]*?\*\*\*)|(\[ [^]*? \])|({ [^]*? })|(.*?)(?:\n|$)/g);
@@ -132,7 +132,6 @@ class LargeLanguageModelOpenAI {
             io_1.IO.warn('Could not parse line "' + content + '"');
             return null;
         }
-        msg_array.pop();
         return msg_array;
     }
 }

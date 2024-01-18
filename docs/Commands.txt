@@ -1,12 +1,17 @@
 TAGS[console,commands]
 TITLE[Available Commands]
 Commands:
-• !help               | Prints a list of commands to the console
-• !say <TEXT>         | Speaks text using character's TTS
-• !reset              | Clears short-term memory
+• !help               | Prints a list of commands to the console.
+• !say <TEXT>         | Speaks text using the character's TTS. Adds the spoken text to memory.
+• !reset              | Clears short-term memory.
+• !reload             | Reloads program and plugins.
 • !memory             | Prints current memory to console
-• !reload             | Reloads program and plugins
+• !mem_add            | Adds a plain text entry to the short term memory. Use !memory to debug.
 • !sing <SONG NAME>   | Sings preprocessed file, see 'Singing of preprocessed audio files' tutorial on github.
 • !sing_random        | Sings random preprocessed file picked from the userdata/songs folder.
-• !clear_queue        | Clears the input/command queue.
-• !playlist           | Plays each song inside the 'Playlist' field and waits for the set time between songs.
+• !clear_queue        | Clears the input/command queue. Can be used when the queue gets backed up.
+• !playlist           | Plays each song inside the 'Song Playlist' field and waits for the set time between songs.
+• !vdb_store <TEXT>   | Stores the text to the vector database.
+• !vdb_query <TEXT>   | Retrieves and prints out an array of memories from the vector database based on the provided context.
+• !vdb_dump           | Prints out the contents of the vector database.
+• !vdb_clear          | Clears the contents of the vector database.

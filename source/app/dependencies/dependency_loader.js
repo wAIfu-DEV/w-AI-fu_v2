@@ -9,12 +9,16 @@ const tts_novelai_1 = require("../tts/tts_novelai");
 const dependencies_1 = require("./dependencies");
 const input_voice_1 = require("../input/input_voice");
 const live_chat_none_1 = require("../live_chat/live_chat_none");
-const llm_characterai_1 = require("../llm/llm_characterai");
 const Waifu_1 = require("../types/Waifu");
 const io_1 = require("../io/io");
 const vtube_studio_1 = require("../vtube_studio/vtube_studio");
 const tts_azure_1 = require("../tts/tts_azure");
-async function loadDependencies(config) {
+const ltm_vectordb_1 = require("../memory/ltm_vectordb");
+const tts_azure_voice_clone_1 = require("../tts/tts_azure_voice_clone");
+const tts_novelai_rvc_1 = require("../tts/tts_novelai_rvc");
+async function loadDependencies() {
+    let config = Waifu_1.wAIfu.state.config;
+    let ltm = new ltm_vectordb_1.LongTermMemoryVectorDB();
     let input_sys;
     if (config.speech_to_text.voice_input.value) {
         input_sys = new input_voice_1.InputSystemVoice();
@@ -35,11 +39,6 @@ async function loadDependencies(config) {
                 llm = new llm_openai_1.LargeLanguageModelOpenAI();
             }
             break;
-        case "characterai":
-            {
-                llm = new llm_characterai_1.LargeLanguageModelCharacterAI();
-            }
-            break;
         default:
             llm = new llm_novelai_1.LargeLanguageModelNovelAI();
             break;
@@ -57,7 +56,18 @@ async function loadDependencies(config) {
                 tts = new tts_azure_1.TextToSpeechAzure();
             }
             break;
+        case "novelai+rvc":
+            {
+                tts = new tts_novelai_rvc_1.TextToSpeechNovelAiVoiceClone();
+            }
+            break;
+        case "azure+rvc":
+            {
+                tts = new tts_azure_voice_clone_1.TextToSpeechAzureVoiceClone();
+            }
+            break;
         default:
+            io_1.IO.warn("Failed to get correct TTS provider, defaulting to NovelAI.");
             tts = new tts_novelai_1.TextToSpeechNovelAI();
             break;
     }
@@ -74,12 +84,6 @@ async function loadDependencies(config) {
                     live_chat = new twitch_chat_1.LiveChatTwitch();
                 }
                 break;
-            case "youtube":
-                {
-                    io_1.IO.warn("ERROR: Youtube support has not yet been implemented.");
-                    live_chat = new twitch_chat_1.LiveChatTwitch();
-                }
-                break;
             default:
                 live_chat = new live_chat_none_1.LiveChatNone();
                 break;
@@ -92,8 +96,9 @@ async function loadDependencies(config) {
         llm.initialize(),
         tts.initialize(),
         live_chat.initialize(),
+        ltm.initialize(),
     ]);
     io_1.IO.debug(`LLM: ${llm_provider}, TTS: ${tts_provider}, STT: ${Waifu_1.wAIfu.state.config.speech_to_text.stt_provider.value}, LIVE: ${live_chat_provider}`);
-    return new dependencies_1.Dependencies(input_sys, llm, tts, live_chat, vts, undefined, undefined);
+    return new dependencies_1.Dependencies(input_sys, llm, tts, live_chat, vts, ltm, Waifu_1.wAIfu.dependencies?.ui || undefined, Waifu_1.wAIfu.dependencies?.twitch_eventsub || undefined);
 }
 exports.loadDependencies = loadDependencies;

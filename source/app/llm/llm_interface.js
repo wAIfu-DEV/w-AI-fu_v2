@@ -11,6 +11,7 @@ var LLM_GEN_ERRORS;
     LLM_GEN_ERRORS["RESPONSE_TIMEOUT"] = "RESPONSE_TIMEOUT";
 })(LLM_GEN_ERRORS || (exports.LLM_GEN_ERRORS = LLM_GEN_ERRORS = {}));
 class LlmGenerationSettings {
+    character_name = "";
     temperature = 1;
     repetition_penalty = 2;
     max_output_length = 80;

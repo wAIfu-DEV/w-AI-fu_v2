@@ -5,6 +5,7 @@ import { IO } from "../io/io";
 import { ENV, wAIfu } from "../types/Waifu";
 
 import { getDeviceIndex } from "../devices/devices";
+import { getCurrentCharacter } from "../characters/characters";
 
 export async function playSongPreprocessed(song_name: string): Promise<void> {
     const SONGS_PATH = process.cwd() + "/userdata/songs/";
@@ -99,6 +100,11 @@ export async function playSongPreprocessed(song_name: string): Promise<void> {
                 resolve();
                 wAIfu.dependencies?.vts.animateTalking();
                 wAIfu.dependencies?.vts.animateIdle();
+                wAIfu.state!.memory.addMemory(
+                    `[ ${
+                        getCurrentCharacter().char_name
+                    } just finished singing. ]\n`
+                );
             }
             return;
         });
@@ -110,6 +116,11 @@ export async function playSongPreprocessed(song_name: string): Promise<void> {
                 resolve();
                 wAIfu.dependencies?.vts.animateTalking();
                 wAIfu.dependencies?.vts.animateIdle();
+                wAIfu.state!.memory.addMemory(
+                    `[ ${
+                        getCurrentCharacter().char_name
+                    } just finished singing. ]\n`
+                );
             }
             return;
         });

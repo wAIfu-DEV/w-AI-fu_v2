@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.preventFreakout = void 0;
 const io_1 = require("../io/io");
 const check_for_spam_1 = require("../moderation/check_for_spam");
+const Waifu_1 = require("../types/Waifu");
 function preventFreakout(text) {
     let ret_val = text;
     let modified = false;
@@ -12,7 +13,8 @@ function preventFreakout(text) {
         ret_val = ret_val.replace(match[0], match[1] + match[1] + match[1]);
         modified = true;
     }
-    if ((0, check_for_spam_1.isSpamMessage)(text) === true) {
+    if (Waifu_1.wAIfu.state.config.moderation.filter_spam_messages.value === true &&
+        (0, check_for_spam_1.isSpamMessage)(text) === true) {
         ret_val = ret_val.toLowerCase();
         modified = true;
     }

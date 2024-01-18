@@ -2,7 +2,8 @@ import { wAIfu } from "../types/Waifu";
 import { IO } from "../io/io";
 
 export function checkForBadWords(text: string): string[] | null {
-    if (wAIfu.state!.config.moderation.filter_bad_words.value === false) return null;
+    if (wAIfu.state!.config.moderation.filter_bad_words.value === false)
+        return null;
 
     let matched_words: string[] = [];
 
@@ -14,8 +15,13 @@ export function checkForBadWords(text: string): string[] | null {
         }
     }
     if (matched_words.length > 0) {
-        IO.print('Bad words filter matched "' + matched_words.join('","') + '" in\r\n"' + text.trim() + '"');
+        IO.print(
+            'Bad words filter matched "' +
+                matched_words.join('","') +
+                '" in\r\n"' +
+                text.trim() +
+                '"'
+        );
         return matched_words;
-    }
-    else return null;
+    } else return null;
 }

@@ -56,9 +56,12 @@ class VtubeStudioAPI {
                     break;
                 case MESSAGE_TYPE.SESSION_AUTH_RESPONSE:
                     {
-                        if (message["data"]["authenticated"] !== true)
-                            io_1.IO.warn("ERROR: Could not authenticate current VtubeStudio API session.\nReason:" +
+                        if (message["data"]["authenticated"] !== true) {
+                            io_1.IO.warn("ERROR: Could not authenticate current VtubeStudio API session.\nReason: " +
                                 message["data"]["reason"]);
+                            this.#authenticate();
+                            return;
+                        }
                         this.#initialize();
                     }
                     break;
@@ -248,6 +251,22 @@ class VtubeStudioAPI {
             return;
         }
         let steps = emotion.talking_hotkey_sequence;
+        for (let step of steps) {
+            this.#websocket.send(JSON.stringify({
+                apiName: "VTubeStudioPublicAPI",
+                apiVersion: "1.0",
+                requestID: "x",
+                messageType: "HotkeyTriggerRequest",
+                data: {
+                    hotkeyID: step,
+                },
+            }));
+        }
+    }
+    animateListening() {
+        if (this.#websocket.readyState !== ws_1.default.OPEN)
+            return;
+        let steps = Waifu_1.wAIfu.state.config.vts.listening_hotkey_sequence.value;
         for (let step of steps) {
             this.#websocket.send(JSON.stringify({
                 apiName: "VTubeStudioPublicAPI",

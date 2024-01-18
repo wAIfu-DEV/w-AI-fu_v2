@@ -1,4 +1,5 @@
 import { IO } from "../io/io";
+import { Message } from "../types/Message";
 import { wAIfu } from "../types/Waifu";
 
 export class PluginFile {
@@ -105,9 +106,9 @@ export class Plugin {
      * Calls the function subscribed to the "input-source" event.
      * No arguments passed, expects a string to use as input, or undefined.
      */
-    onInputSource(): string | undefined {
+    onInputSource(): string | Message | undefined {
         let ret = this.#callEvent("input-source");
-        return typeof ret === "string" ? ret : undefined;
+        return ret === undefined ? undefined : ret;
     }
     /**
      * Called when receiving an input.

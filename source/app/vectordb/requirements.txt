@@ -1,0 +1,3 @@
+vectordb2==0.1.9
+websockets==11.0.3
+git+https://github.com/vioshyvo/mrpt/

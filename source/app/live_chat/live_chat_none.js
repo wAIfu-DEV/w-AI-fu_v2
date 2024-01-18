@@ -4,6 +4,8 @@ exports.LiveChatNone = void 0;
 const Message_1 = require("../types/Message");
 const Result_1 = require("../types/Result");
 class LiveChatNone {
+    msg_buffer = [];
+    prioritized_msg_buffer = [];
     async initialize() { }
     async free() { }
     nextMessage() {

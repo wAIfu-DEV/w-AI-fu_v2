@@ -29,6 +29,7 @@ const fs = __importStar(require("fs"));
 const io_1 = require("../io/io");
 const Waifu_1 = require("../types/Waifu");
 const devices_1 = require("../devices/devices");
+const characters_1 = require("../characters/characters");
 async function playSongPreprocessed(song_name) {
     const SONGS_PATH = process.cwd() + "/userdata/songs/";
     const vocals = SONGS_PATH + `${song_name}_vocals.wav`;
@@ -89,6 +90,7 @@ async function playSongPreprocessed(song_name) {
                 resolve();
                 Waifu_1.wAIfu.dependencies?.vts.animateTalking();
                 Waifu_1.wAIfu.dependencies?.vts.animateIdle();
+                Waifu_1.wAIfu.state.memory.addMemory(`[ ${(0, characters_1.getCurrentCharacter)().char_name} just finished singing. ]\n`);
             }
             return;
         });
@@ -101,6 +103,7 @@ async function playSongPreprocessed(song_name) {
                 resolve();
                 Waifu_1.wAIfu.dependencies?.vts.animateTalking();
                 Waifu_1.wAIfu.dependencies?.vts.animateIdle();
+                Waifu_1.wAIfu.state.memory.addMemory(`[ ${(0, characters_1.getCurrentCharacter)().char_name} just finished singing. ]\n`);
             }
             return;
         });

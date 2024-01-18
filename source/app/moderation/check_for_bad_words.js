@@ -14,7 +14,11 @@ function checkForBadWords(text) {
         }
     }
     if (matched_words.length > 0) {
-        io_1.IO.print('Bad words filter matched "' + matched_words.join('","') + '" in\r\n"' + text.trim() + '"');
+        io_1.IO.print('Bad words filter matched "' +
+            matched_words.join('","') +
+            '" in\r\n"' +
+            text.trim() +
+            '"');
         return matched_words;
     }
     else

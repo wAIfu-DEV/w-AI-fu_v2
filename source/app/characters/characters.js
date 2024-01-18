@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.writeCharacter = exports.retreiveCharacters = exports.getCurrentCharacter = exports.getCharByFileName = void 0;
+exports.writeCharacter = exports.retrieveAllCharacters = exports.getCurrentCharacter = exports.getCharByFileName = void 0;
 const fs = __importStar(require("fs"));
 const character_1 = require("./character");
 const io_1 = require("../io/io");
@@ -33,7 +33,7 @@ const Helper_1 = require("../types/Helper");
 function getCharByFileName(file_name) {
     let character = Waifu_1.wAIfu.state.characters[file_name];
     if (character === undefined) {
-        io_1.IO.warn('ERROR: Could not access character data for:', file_name, 'Please retry with another character.');
+        io_1.IO.warn("ERROR: Could not access character data for:", file_name, "Please retry with another character.");
         return new character_1.Character();
     }
     return character;
@@ -43,31 +43,39 @@ function getCurrentCharacter() {
     return getCharByFileName(Waifu_1.wAIfu.state.config._.character_name.value);
 }
 exports.getCurrentCharacter = getCurrentCharacter;
-function retreiveCharacters() {
-    let CHARA_PATH = process.cwd() + '/userdata/characters/';
+function retrieveAllCharacters() {
+    const CHARA_PATH = process.cwd() + "/userdata/characters/";
+    const SENTINEL_VAL = new character_1.Character();
+    const files = fs.readdirSync(CHARA_PATH, {
+        recursive: false,
+        encoding: "utf8",
+    });
     let result = {};
-    let files = fs.readdirSync(CHARA_PATH, { recursive: false, encoding: 'utf8' });
     for (let f of files) {
-        let name_no_extension = f.replaceAll(/\..*/g, '');
-        const PATH = CHARA_PATH + f;
-        let parse_result = (0, file_system_1.readParseJSON)(PATH);
+        const name_no_extension = f.replaceAll(/\..*/g, "");
+        const FPATH = CHARA_PATH + f;
+        const parse_result = (0, file_system_1.readParseJSON)(FPATH);
         if (parse_result.success === false) {
-            io_1.IO.warn('Could not import character file', PATH);
+            io_1.IO.warn("Could not import character file", FPATH);
             continue;
         }
-        let parsed_obj = parse_result.value;
-        let type_match = (0, Helper_1.isOfClassDeep)(parsed_obj, new character_1.Character(), { obj_name: 'character', add_missing_fields: true, print: true });
-        if (type_match === false) {
-            io_1.IO.warn('ERROR: Character file', PATH, 'failed the sanity check.');
+        let char = parse_result.value;
+        let is_char_type = (0, Helper_1.isOfClassDeep)(char, SENTINEL_VAL, {
+            obj_name: "character",
+            add_missing_fields: true,
+            print: true,
+        });
+        if (!is_char_type) {
+            io_1.IO.warn("ERROR: Character file", FPATH, "failed the sanity check.");
             continue;
         }
-        result[name_no_extension] = parsed_obj;
+        result[name_no_extension] = char;
     }
     return result;
 }
-exports.retreiveCharacters = retreiveCharacters;
+exports.retrieveAllCharacters = retrieveAllCharacters;
 function writeCharacter(file_name, char) {
-    let CHARA_PATH = process.cwd() + '/userdata/characters/';
-    fs.writeFileSync(CHARA_PATH + file_name + '.json', JSON.stringify(char));
+    let CHARA_PATH = process.cwd() + "/userdata/characters/";
+    fs.writeFileSync(CHARA_PATH + file_name + ".json", JSON.stringify(char));
 }
 exports.writeCharacter = writeCharacter;

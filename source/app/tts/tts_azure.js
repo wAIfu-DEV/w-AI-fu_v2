@@ -118,7 +118,6 @@ class TextToSpeechAzure {
                 `<voice name="${params.voice.trim()}">` +
                 `<prosody pitch="${pitch_modifier}%">${sanitized_text.trim()}</prosody>` +
                 "</voice></speak>";
-            io_1.IO.print(ssml);
             const audio_config = azure.AudioConfig.fromAudioFileOutput(file_path);
             const synthesizer = new azure.SpeechSynthesizer(this.#azure_config, audio_config);
             synthesizer.speakSsmlAsync(ssml, (result) => {

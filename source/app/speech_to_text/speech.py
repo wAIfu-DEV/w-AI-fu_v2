@@ -92,7 +92,7 @@ def ptt_record_audio():
     paudio = pyaudio.PyAudio()
     channels = paudio.get_device_info_by_index(index)["maxInputChannels"]
     stream = paudio.open(format=FORMAT,
-                        channels=channels,
+                        channels=1,#channels,
                         rate=sample_rate,
                         input=True,
                         output=True,
@@ -116,7 +116,7 @@ def ptt_record_audio():
     paudio.terminate()
 
     wf = wave.open(filename, "wb")
-    wf.setnchannels(channels)
+    wf.setnchannels(1) #channels)
     wf.setsampwidth(paudio.get_sample_size(FORMAT))
     wf.setframerate(sample_rate)
     wf.writeframes(b"".join(frames))
@@ -131,16 +131,60 @@ def recognize_file():
         audio = recognizer.listen(source)
         recognize_audio(audio, recognizer, throw=False)
 
+last_received = 0
+reset_next = False
+recognized_text = ""
+
+def callback(recognizer, audio):
+    global text, api_key, ws, last_received, recognized_text, reset_next
+    print("CALLBACK", file=sys.stderr)
+    if reset_next:
+        recognized_text = ""
+        reset_next = False
+    last_received = time.time()
+    ws.send("")
+    text = recognize_audio(audio, recognizer, throw=False)
+    ws.send("")
+    print(text, file=sys.stderr)
+    recognized_text = recognized_text + text + " "
+    last_received = time.time()
+    print(recognized_text, file=sys.stderr)
 
 def speech_recognition():
-    global index, ws, provider, api_key
+    global index, ws, provider, api_key, last_received, recognized_text, reset_next
     recognizer = sr.Recognizer()
+
+    recognizer.energy_threshold = 1400
+    recognizer.pause_threshold = 0.35
+    recognizer.non_speaking_duration = 0.35
+    recognizer.dynamic_energy_threshold = False
+
+    recognizer.whisper_model = "base.en"
+    recognizer.operation_timeout = 2
+
+    mic = sr.Microphone(device_index=index)
+    recognizer.listen_in_background(mic, callback)
+
     while True:
+        time.sleep(0.1)
+        if (time.time() - last_received > 1.5) and (recognized_text != ""):
+            print("SENT TEXT TO HILDA", file=sys.stderr)
+            ws.send(recognized_text)
+            recognized_text = ""
+            reset_next = True
+    return
+    while True:
+        recognizer.energy_threshold = 2000
+        recognizer.pause_threshold = 0.8
+        recognizer.dynamic_energy_threshold = False
         try:
             with sr.Microphone(device_index=index) as mic:
-                recognizer.adjust_for_ambient_noise(mic)
-                audio = recognizer.listen(mic, timeout=5)
-                recognize_audio(audio, recognizer, throw=True)
+                #recognizer.adjust_for_ambient_noise(mic)
+                audio = recognizer.listen(mic)
+                ws.send(recognize_audio(audio, recognizer, throw=False))
+                #recognizer.listen_in_background(mic)
+                #print(recognize_audio(audio, recognizer, throw=True))
+                #sys.stdout.flush()
         except sr.UnknownValueError:
             recognizer = sr.Recognizer()
             continue
@@ -165,18 +209,16 @@ def recognize_audio(audio: sr.AudioData, recognizer: sr.Recognizer, throw: bool)
         if throw:
             raise Exception()
         print("Incorrect OpenAI token.", file=sys.stderr)
-        text = '...'
     except sr.exceptions.UnknownValueError as e:
         if throw:
             raise Exception()
         print("Could not understand audio.", file=sys.stderr)
-        text = '...'
     except sr.exceptions.RequestError as e:
         if throw:
             raise Exception()
         print("Could not contact audio recognition API.", file=sys.stderr)
-        text = '...'
-    ws.send(text)
+    #ws.send(text)
+    return text
     print("Recognition took:", round((time.time() - start_time) * 1_000), "ms", file=sys.stdout)
     sys.stdout.flush()
 

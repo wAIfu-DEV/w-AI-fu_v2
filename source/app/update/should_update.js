@@ -28,14 +28,14 @@ const fs = __importStar(require("fs"));
 const io_1 = require("../io/io");
 const Waifu_1 = require("../types/Waifu");
 async function checkUpdates() {
-    if (fs.existsSync(process.cwd() + '/.noupdate') === true)
+    if (fs.existsSync(process.cwd() + "/.noupdate") === true)
         return;
     let query;
     try {
-        query = await fetch('https://api.github.com/repos/wAIfu-DEV/w-AI-fu_v2/tags');
+        query = await fetch("https://api.github.com/repos/wAIfu-DEV/w-AI-fu_v2/tags");
     }
     catch (e) {
-        io_1.IO.warn('Error: Could not contact github while trying to get latest version.');
+        io_1.IO.warn("Error: Could not contact github while trying to get latest version.");
         return;
     }
     let data;
@@ -43,23 +43,24 @@ async function checkUpdates() {
         data = await query.json();
     }
     catch {
-        io_1.IO.warn('Error: Could not retreive latest version from github.');
+        io_1.IO.warn("Error: Could not retreive latest version from github.");
         return;
     }
-    if (typeof data !== 'object' || data === null || data === undefined) {
-        io_1.IO.warn('Error: Fetched invalid data from github while trying to retreive latest version.');
+    if (typeof data !== "object" || data === null || data === undefined) {
+        io_1.IO.warn("Error: Fetched invalid data from github while trying to retreive latest version.");
         return;
     }
     let latest_version = data[0];
-    if (latest_version === undefined
-        || latest_version === null
-        || typeof latest_version !== "object") {
-        io_1.IO.warn('Error: Fetched invalid data from github while trying to retreive latest version.');
+    if (latest_version === undefined ||
+        latest_version === null ||
+        typeof latest_version !== "object") {
+        io_1.IO.warn("Error: Fetched invalid data from github while trying to retreive latest version.");
         return;
     }
-    if ("name" in latest_version && Waifu_1.wAIfu.getVersion() !== latest_version["name"]) {
+    if ("name" in latest_version &&
+        Waifu_1.wAIfu.getVersion() !== latest_version["name"]) {
         const new_version = String(latest_version["name"]);
-        Waifu_1.wAIfu.dependencies?.ui?.send('UPDATE', { version: new_version });
+        Waifu_1.wAIfu.dependencies?.ui?.send("UPDATE", { version: new_version });
     }
 }
 exports.checkUpdates = checkUpdates;

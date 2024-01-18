@@ -14,11 +14,11 @@ class ChatterInfos {
         const result = [];
         const char = (0, characters_1.getCurrentCharacter)();
         if (this.isJustReturningChatter(chatter_name)) {
-            result.push(`${chatter_name} just appeared in CHAT, ${char.char_name} should greet them.\n`);
+            result.push(`${chatter_name} just appeared in CHAT, ${char.char_name} should greet them.`);
         }
         if (result.length === 0)
             return "";
-        return result.join("----\n");
+        return result.join("");
     }
 }
 exports.ChatterInfos = ChatterInfos;

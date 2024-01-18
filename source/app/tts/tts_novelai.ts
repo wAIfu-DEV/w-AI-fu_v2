@@ -1,4 +1,5 @@
 import * as cproc from "child_process";
+import * as crypto from "crypto";
 
 import WebSocket, { WebSocketServer } from "ws";
 
@@ -6,7 +7,7 @@ import { ENV, wAIfu } from "../types/Waifu";
 import { Result } from "../types/Result";
 import { IO } from "../io/io";
 import {
-    TextToSpeech,
+    ITextToSpeech,
     TTS_GEN_ERROR,
     TTS_PLAY_ERROR,
     TtsGenerationSettings,
@@ -14,14 +15,10 @@ import {
 } from "./tts_interface";
 import { clearStreamedSubtitles } from "../closed_captions/stream_captions";
 
-const GENERATION_TIMEOUT_MS = 10_000 as const;
-
-export class TextToSpeechNovelAI implements TextToSpeech {
+export class TextToSpeechNovelAI implements ITextToSpeech {
     #child_process: cproc.ChildProcess;
     #websocket: WebSocket = new WebSocket(null);
     #websocket_server: WebSocketServer;
-
-    #current_generations: number = 0;
 
     skip: boolean = false;
 
@@ -56,7 +53,7 @@ export class TextToSpeechNovelAI implements TextToSpeech {
                 this.#websocket.on("error", (err: Error) => IO.print(err));
 
                 this.#websocket.send("");
-                IO.debug("Loaded TextToSpeechAzure.");
+                IO.debug("Loaded TextToSpeechNovelAI.");
                 resolve();
             });
         });
@@ -84,22 +81,31 @@ export class TextToSpeechNovelAI implements TextToSpeech {
         });
     }
 
-    async generateSpeech(
+    #parseData(
+        data: string,
+        expected_id: string
+    ): Result<string, TTS_GEN_ERROR> | null {
+        let split_data = data.split(" ");
+        if (split_data[0] !== expected_id) return null;
+
+        switch (split_data[1]) {
+            case "ERROR": {
+                let err_type = split_data[2]!;
+                let err_msg = split_data.slice(3, undefined).join(" ");
+                return new Result(false, err_msg, err_type as TTS_GEN_ERROR);
+            }
+            default: {
+                return new Result(true, split_data[0], TTS_GEN_ERROR.NONE);
+            }
+        }
+    }
+
+    generateSpeech(
         text: string,
         options: TtsGenerationSettings
     ): Promise<Result<string, TTS_GEN_ERROR>> {
-        await_connect: while (true) {
-            if (this.#websocket.readyState === WebSocket.OPEN)
-                break await_connect;
-            await new Promise<void>((resolve) =>
-                setTimeout(() => resolve(), 100)
-            );
-        }
-
-        this.#current_generations += 1;
-        let expected_id = this.#current_generations;
-
         return new Promise((resolve) => {
+            let expected_id = crypto.randomUUID();
             let is_resolved = false;
 
             this.#websocket.send(
@@ -113,6 +119,19 @@ export class TextToSpeechNovelAI implements TextToSpeech {
                     })
             );
 
+            const el = (ev: WebSocket.MessageEvent) => {
+                if (is_resolved === true) return;
+                const result = this.#parseData(
+                    ev.data.toString("utf8"),
+                    expected_id
+                );
+                if (result === null) return;
+                is_resolved = true;
+
+                resolve(result);
+                this.#websocket.removeEventListener("message", el);
+            };
+
             const timeout = () => {
                 if (is_resolved === true) return;
                 is_resolved = true;
@@ -123,79 +142,41 @@ export class TextToSpeechNovelAI implements TextToSpeech {
                         TTS_GEN_ERROR.RESPONSE_TIMEOUT
                     )
                 );
+                this.#websocket.removeEventListener("message", el);
                 return;
             };
-            setTimeout(timeout, GENERATION_TIMEOUT_MS);
+            setTimeout(
+                timeout,
+                wAIfu.state!.config.text_to_speech.timeout_seconds.value * 1_000
+            );
 
-            const el = (ev: WebSocket.MessageEvent) => {
-                if (is_resolved === true) return;
-
-                let split_data = ev.data.toString("utf8").split(" ");
-                if (split_data[0] !== String(expected_id)) return;
-                this.#current_generations -= 1;
-                switch (split_data[1]) {
-                    case "ERROR":
-                        {
-                            let err_type = split_data[2]!;
-                            let err_msg = split_data
-                                .slice(3, undefined)
-                                .join(" ");
-                            is_resolved = true;
-                            resolve(
-                                new Result(
-                                    false,
-                                    err_msg,
-                                    err_type as TTS_GEN_ERROR
-                                )
-                            );
-                        }
-                        break;
-                    default: {
-                        let return_id = split_data.slice(1, undefined).join("");
-                        is_resolved = true;
-                        resolve(
-                            new Result(true, return_id, TTS_GEN_ERROR.NONE)
-                        );
-                    }
-                }
-                this.#websocket.removeEventListener("message", el);
-            };
-
-            // @ts-ignore
             this.#websocket.addEventListener("message", el);
         });
     }
 
-    async playSpeech(
+    playSpeech(
         id: string,
         options: TtsPlaySettings
     ): Promise<Result<void, TTS_PLAY_ERROR>> {
-        await_connect: while (true) {
-            if (this.#websocket.readyState === WebSocket.OPEN)
-                break await_connect;
-            await new Promise<void>((resolve) =>
-                setTimeout(() => resolve(), 100)
-            );
-        }
-
-        this.#websocket.send(
-            "PLAY " +
-                JSON.stringify({
-                    id: id,
-                    options: {
-                        device: options.device,
-                        volume_modifier: options.volume_modifier,
-                    },
-                })
-        );
-
         return new Promise((resolve) => {
-            let resolved: boolean = false;
+            let is_resolved: boolean = false;
 
-            const el = () => {
-                if (resolved === true) return;
-                resolved = true;
-                this.#current_generations -= 1;
+            this.#websocket.send(
+                "PLAY " +
+                    JSON.stringify({
+                        id: id,
+                        options: {
+                            device: options.device,
+                            volume_modifier: options.volume_modifier,
+                        },
+                    })
+            );
+
+            const el = (ev: WebSocket.MessageEvent) => {
+                if (is_resolved === true) return;
+                if (ev.data.toString("utf8") !== "PLAY DONE") return;
+
+                is_resolved = true;
                 resolve(new Result(true, undefined, TTS_PLAY_ERROR.NONE));
                 this.#websocket.removeEventListener("message", el);
                 return;

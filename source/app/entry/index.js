@@ -15,6 +15,7 @@ const should_update_1 = require("../update/should_update");
 const check_python_1 = require("../check_python/check_python");
 const twitch_eventsub_1 = require("../twitch/twitch_eventsub");
 const should_use_eventsub_1 = require("../twitch/should_use_eventsub");
+const setup_event_handlers_1 = require("../twitch/setup_event_handlers");
 async function exit() {
     io_1.IO.quietPrint("Exiting w-AI-fu...");
     for (let plugin of Waifu_1.wAIfu.plugins)
@@ -24,7 +25,7 @@ async function exit() {
     if (Waifu_1.wAIfu.dependencies?.twitch_eventsub !== undefined)
         Waifu_1.wAIfu.dependencies.twitch_eventsub.free();
     Waifu_1.wAIfu.dependencies?.ui?.free();
-    io_1.IO.setClosedCaptions("", "");
+    io_1.IO.setClosedCaptions("");
     electron_1.app.exit();
 }
 exports.exit = exit;
@@ -34,27 +35,46 @@ async function main() {
         io_1.IO.error(e.stack);
     });
     process.on("unhandledRejection", (e) => {
-        io_1.IO.error("w-AI-fu encountered an unhandled exception.");
-        io_1.IO.error(e.stack);
+        io_1.IO.error("w-AI-fu encountered an unhandled rejection.");
+        if (e !== undefined && e.stack !== undefined)
+            io_1.IO.error(e.stack);
+        else
+            io_1.IO.error(e);
+    });
+    io_1.IO.debug("Awaiting Electron...");
+    await electron_1.app.whenReady();
+    const startup_win = new electron_1.BrowserWindow({
+        alwaysOnTop: true,
+        title: "w-AI-fu startup",
+        width: 400,
+        height: 200,
+        icon: process.cwd() + "/source/ui/icon.ico",
+        autoHideMenuBar: true,
+        titleBarStyle: "hidden",
+        show: false,
+        center: true,
+        skipTaskbar: true,
+    });
+    startup_win
+        .loadFile(process.cwd() + "/source/ui/startup_placeholder.html")
+        .then(() => {
+        startup_win.show();
     });
     process.title = "w-AI-fu";
     Waifu_1.wAIfu.version = Waifu_1.wAIfu.getVersion();
     io_1.IO.print("w-AI-fu", Waifu_1.wAIfu.version);
     io_1.IO.debug("Checking python install...");
-    const is_py_intalled = (0, check_python_1.checkPythonInstall)();
-    if (!is_py_intalled)
+    if (!(0, check_python_1.isPythonInstalledPlusSetup)())
         return;
     io_1.IO.debug("Loading application state...");
     Waifu_1.wAIfu.state = new state_1.AppState();
     io_1.IO.debug("Fetching audio devices...");
     Waifu_1.wAIfu.state.devices = (0, devices_1.getDevices)();
     io_1.IO.debug("Loading dependencies...");
-    Waifu_1.wAIfu.dependencies = await (0, dependency_loader_1.loadDependencies)(Waifu_1.wAIfu.state.config);
+    Waifu_1.wAIfu.dependencies = await (0, dependency_loader_1.loadDependencies)();
     Waifu_1.wAIfu.dependencies.ui = new userinterface_1.UserInterface();
     io_1.IO.debug("Loading plugins...");
     Waifu_1.wAIfu.plugins = (0, load_plugins_1.loadPlugins)();
-    io_1.IO.debug("Awaiting Electron...");
-    await electron_1.app.whenReady();
     io_1.IO.debug("Creating Electron window...");
     electron_1.app.name = "w-AI-fu";
     const win = new electron_1.BrowserWindow({
@@ -63,25 +83,29 @@ async function main() {
         height: 900,
         icon: process.cwd() + "/source/ui/icon.ico",
         autoHideMenuBar: true,
+        show: false,
     });
-    win.loadFile(process.cwd() + "/source/ui/index.html");
     win.on("close", (e) => {
         e.preventDefault();
         io_1.IO.quietPrint("Exited after UI closing.");
         exit();
     });
+    await win.loadFile(process.cwd() + "/source/ui/index.html");
     await Waifu_1.wAIfu.dependencies.ui.initialize();
     io_1.IO.bindToUI(Waifu_1.wAIfu.dependencies.ui);
+    startup_win.close();
+    win.show();
     io_1.IO.debug("Checking for updates...");
     (0, should_update_1.checkUpdates)();
     if ((0, should_use_eventsub_1.shouldUseEventSub)() === true) {
         io_1.IO.debug("Loading Twitch EventSub API...");
         Waifu_1.wAIfu.dependencies.twitch_eventsub = new twitch_eventsub_1.TwitchEventSubs();
         await Waifu_1.wAIfu.dependencies.twitch_eventsub.initialize();
+        (0, setup_event_handlers_1.setupTwitchEventSubListeners)(Waifu_1.wAIfu.dependencies.twitch_eventsub);
     }
     io_1.IO.debug("Initialization done.");
     while (true)
         await Waifu_1.wAIfu.mainLoop();
 }
 exports.main = main;
-setTimeout(main, 0);
+setImmediate(main);

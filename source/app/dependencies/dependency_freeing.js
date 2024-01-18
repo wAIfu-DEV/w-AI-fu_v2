@@ -7,7 +7,8 @@ async function freeDependencies(dependencies) {
         dependencies.live_chat.free(),
         dependencies.llm.free(),
         dependencies.tts.free(),
-        dependencies.vts.free()
+        dependencies.vts.free(),
+        dependencies.ltm.free(),
     ]);
 }
 exports.freeDependencies = freeDependencies;

@@ -33,6 +33,7 @@ const io_1 = require("../io/io");
 class InputSystemText {
     #cli_input_interface;
     #interrupt_next;
+    input_text = "";
     constructor() {
         this.#cli_input_interface = readline.createInterface(process.stdin, process.stdout);
         this.#interrupt_next = false;

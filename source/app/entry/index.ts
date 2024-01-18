@@ -9,12 +9,13 @@ import { AppState } from "../state/state";
 import { freeDependencies } from "../dependencies/dependency_freeing";
 import { freePlugins } from "../plugins/free_plugins";
 import { checkUpdates } from "../update/should_update";
-import { checkPythonInstall } from "../check_python/check_python";
+import { isPythonInstalledPlusSetup } from "../check_python/check_python";
 import { TwitchEventSubs } from "../twitch/twitch_eventsub";
 import { shouldUseEventSub } from "../twitch/should_use_eventsub";
+import { setupTwitchEventSubListeners } from "../twitch/setup_event_handlers";
 
 /**
- * @deprecated THIS FUNCTION IS ALREADY BEING CALLED AT PROCESS EXIT,
+ * @info THIS FUNCTION IS ALREADY BEING CALLED AT PROCESS EXIT,
  *             DO NOT CALL DURING PROCESS EXECUTION.
  */
 export async function exit(): Promise<void> {
@@ -25,7 +26,7 @@ export async function exit(): Promise<void> {
     if (wAIfu.dependencies?.twitch_eventsub !== undefined)
         wAIfu.dependencies.twitch_eventsub.free();
     wAIfu.dependencies?.ui?.free();
-    IO.setClosedCaptions("", "");
+    IO.setClosedCaptions("");
     app.exit();
 }
 
@@ -39,17 +40,40 @@ export async function main(): Promise<void> {
     });
 
     process.on("unhandledRejection", (e: any) => {
-        IO.error("w-AI-fu encountered an unhandled exception.");
-        IO.error(e.stack);
+        IO.error("w-AI-fu encountered an unhandled rejection.");
+        if (e !== undefined && e.stack !== undefined) IO.error(e.stack);
+        else IO.error(e);
     });
 
+    IO.debug("Awaiting Electron...");
+    await app.whenReady();
+
+    // Display placeholder starting screen
+    const startup_win = new BrowserWindow({
+        alwaysOnTop: true,
+        title: "w-AI-fu startup",
+        width: 400,
+        height: 200,
+        icon: process.cwd() + "/source/ui/icon.ico",
+        autoHideMenuBar: true,
+        titleBarStyle: "hidden",
+        show: false,
+        center: true,
+        skipTaskbar: true,
+    });
+    startup_win
+        .loadFile(process.cwd() + "/source/ui/startup_placeholder.html")
+        .then(() => {
+            startup_win.show();
+        });
+
     process.title = "w-AI-fu";
+
     wAIfu.version = wAIfu.getVersion();
     IO.print("w-AI-fu", wAIfu.version);
 
     IO.debug("Checking python install...");
-    const is_py_intalled = checkPythonInstall();
-    if (!is_py_intalled) return;
+    if (!isPythonInstalledPlusSetup()) return;
 
     IO.debug("Loading application state...");
     wAIfu.state = new AppState();
@@ -58,16 +82,11 @@ export async function main(): Promise<void> {
     wAIfu.state!.devices = getDevices();
 
     IO.debug("Loading dependencies...");
-    wAIfu.dependencies = await loadDependencies(wAIfu.state!.config);
-    wAIfu.dependencies.ui = new UserInterface();
+    wAIfu.dependencies = await loadDependencies();
+    wAIfu.dependencies!.ui = new UserInterface();
 
     IO.debug("Loading plugins...");
     wAIfu.plugins = loadPlugins();
-
-    // Required by Electron before displaying the window.
-    // This is unavoidable dead time so better use it to load our own deps.
-    IO.debug("Awaiting Electron...");
-    await app.whenReady();
 
     IO.debug("Creating Electron window...");
     app.name = "w-AI-fu";
@@ -77,29 +96,34 @@ export async function main(): Promise<void> {
         height: 900,
         icon: process.cwd() + "/source/ui/icon.ico",
         autoHideMenuBar: true,
+        show: false,
     });
-    win.loadFile(process.cwd() + "/source/ui/index.html");
     win.on("close", (e) => {
         e.preventDefault();
         IO.quietPrint("Exited after UI closing.");
         exit();
     });
+    await win.loadFile(process.cwd() + "/source/ui/index.html");
 
-    await wAIfu.dependencies.ui.initialize();
-    IO.bindToUI(wAIfu.dependencies.ui);
+    await wAIfu.dependencies!.ui!.initialize();
+    IO.bindToUI(wAIfu.dependencies!.ui!);
+
+    startup_win.close();
+    win.show();
 
     IO.debug("Checking for updates...");
     checkUpdates();
 
     if (shouldUseEventSub() === true) {
         IO.debug("Loading Twitch EventSub API...");
-        wAIfu.dependencies.twitch_eventsub = new TwitchEventSubs();
-        await wAIfu.dependencies.twitch_eventsub.initialize();
+        wAIfu.dependencies!.twitch_eventsub = new TwitchEventSubs();
+        await wAIfu.dependencies!.twitch_eventsub.initialize();
+        setupTwitchEventSubListeners(wAIfu.dependencies!.twitch_eventsub);
     }
 
     IO.debug("Initialization done.");
     while (true) await wAIfu.mainLoop();
 }
-setTimeout(main, 0); // <-- should prevent circular dependency issues.
-// Makes it so main is called only after having full
-// initialization of the program.
+setImmediate(main); // <-- should prevent circular dependency issues.
+// Makes it so main is called only after having full initialization of the
+// program.

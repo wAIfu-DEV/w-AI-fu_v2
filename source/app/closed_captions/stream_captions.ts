@@ -1,9 +1,10 @@
-import { WebSocket, WebSocketServer } from "ws";
+import WebSocket, { WebSocketServer } from "ws";
 import { wAIfu } from "../types/Waifu";
 
 // TODO: THERE MUST BE A BETTER WAY TO DO THIS
 let ClosedCaptionsWSS = new WebSocketServer({ host: "127.0.0.1", port: 8756 });
-let ClosedCaptionsWS = new WebSocket(null);
+export let ClosedCaptionsWS = new WebSocket(null);
+
 ClosedCaptionsWSS.on("connection", (ws, _) => {
     ClosedCaptionsWS = ws;
 });
@@ -12,18 +13,21 @@ let is_writing = false;
 let skip_next: true | false = false;
 
 type Word = { text: string; chars: number };
+type StreamCCOptions = {
+    time_ms?: number | undefined;
+    persistant?: boolean | undefined;
+    is_narrator?: boolean | undefined;
+};
 
 export function clearStreamedSubtitles(): void {
-    skip_next = true;
+    if (is_writing) skip_next = true;
     if (ClosedCaptionsWS.readyState === WebSocket.OPEN)
         ClosedCaptionsWS.send("CLEAR");
 }
 
 export function streamSubtitles(
     text: string,
-    time_ms: number,
-    persistant: boolean,
-    is_narrator: boolean
+    options: StreamCCOptions
 ): Promise<void> {
     return new Promise(async (resolve) => {
         let is_resolved = false;
@@ -39,12 +43,12 @@ export function streamSubtitles(
             word_list.push({ text: word, chars: char_count });
         }
 
-        let ms_per_char = time_ms / total_chars;
+        let ms_per_char = (options.time_ms || 1) / total_chars;
 
         is_writing = true;
 
-        if (ClosedCaptionsWS.readyState === WebSocket.OPEN)
-            ClosedCaptionsWS.send("CLEAR");
+        //if (ClosedCaptionsWS.readyState === WebSocket.OPEN)
+        //    ClosedCaptionsWS.send("CLEAR");
 
         while (word_list.length !== 0) {
             if (is_resolved) return;
@@ -65,7 +69,7 @@ export function streamSubtitles(
             if (ClosedCaptionsWS.readyState === WebSocket.OPEN)
                 ClosedCaptionsWS.send(`WORD ${to_display.text}`);
 
-            if (!is_narrator)
+            if (options.is_narrator !== true)
                 wAIfu.dependencies?.vts.tryPlayKeywordSequence(to_display.text);
 
             await new Promise((resolve_sleep) =>
@@ -75,7 +79,7 @@ export function streamSubtitles(
 
         is_writing = false;
 
-        if (persistant) return;
+        if (options.persistant) return;
 
         setTimeout(() => {
             if (is_writing === true) return;

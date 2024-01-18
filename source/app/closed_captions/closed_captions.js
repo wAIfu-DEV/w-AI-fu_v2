@@ -27,7 +27,15 @@ exports.setClosedCaptions_impl = void 0;
 const fs = __importStar(require("fs"));
 const get_audio_duration_1 = require("../audio_duration/get_audio_duration");
 const stream_captions_1 = require("./stream_captions");
-function setClosedCaptions_impl(text, id, persistent = false, is_narrator = false) {
+const Waifu_1 = require("../types/Waifu");
+function setClosedCaptions_impl(text, options = undefined) {
+    if (options === undefined) {
+        options = {
+            id: undefined,
+            is_narrator: false,
+            persistent: false,
+        };
+    }
     fs.writeFile(process.cwd() + "/closed_captions.txt", text, (err) => {
         if (err === null)
             return;
@@ -35,12 +43,28 @@ function setClosedCaptions_impl(text, id, persistent = false, is_narrator = fals
     });
     if (text === "")
         return;
-    if (id === "") {
-        (0, stream_captions_1.streamSubtitles)(text, 0, persistent, is_narrator);
+    if (options.id === undefined || options.id === "") {
+        (0, stream_captions_1.streamSubtitles)(text, {
+            is_narrator: options.is_narrator || false,
+            persistant: options.persistent || false,
+        });
         return;
     }
-    (0, get_audio_duration_1.getAudioDuration)(process.cwd() + "/source/app/novelai_api/audio/" + id + ".mp3").then((value) => {
-        (0, stream_captions_1.streamSubtitles)(text, value, persistent, is_narrator);
+    (0, get_audio_duration_1.getAudioDuration)(Waifu_1.wAIfu.state?.config.text_to_speech.tts_provider.value === "novelai" ||
+        Waifu_1.wAIfu.state?.config.text_to_speech.tts_provider.value ===
+            "novelai+rvc"
+        ? process.cwd() +
+            "/source/app/novelai_api/audio/" +
+            options.id +
+            ".mp3"
+        : process.cwd() + "/source/app/audio/" + options.id + ".wav").then((value) => {
+        if (options === undefined)
+            return;
+        (0, stream_captions_1.streamSubtitles)(text, {
+            time_ms: value,
+            is_narrator: options.is_narrator,
+            persistant: options.persistent,
+        });
     });
 }
 exports.setClosedCaptions_impl = setClosedCaptions_impl;

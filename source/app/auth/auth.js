@@ -19,6 +19,9 @@ class Auth {
         twitchapp_clientid: "",
         twitchapp_secret: "",
     };
+    "youtube" = {
+        api_key: "",
+    };
     "azure" = {
         token: "",
         region: "",

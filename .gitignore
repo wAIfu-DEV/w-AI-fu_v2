@@ -1,3 +1,4 @@
 userdata/*
 bin/ffmpeg/ffmpeg.exe
-plugins/*
+source/app/vectordb/database.txt
+source/app/vectordb/venv

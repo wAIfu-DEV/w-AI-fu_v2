@@ -26,32 +26,38 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.pickRandomSong = void 0;
 const fs = __importStar(require("fs"));
 const io_1 = require("../io/io");
-function pickRandomSong() {
-    let files = fs.readdirSync(process.cwd() + '/userdata/songs/', { recursive: false, withFileTypes: false, encoding: 'utf8' });
+function pickRandomSong(last_song) {
+    let files = fs.readdirSync(process.cwd() + "/userdata/songs/", {
+        recursive: false,
+        withFileTypes: false,
+        encoding: "utf8",
+    });
     if (files.length === 0) {
-        io_1.IO.warn('ERROR: Could not pick random song since there are no songs in the userdata/songs folder');
-        return '';
+        io_1.IO.warn("ERROR: Could not pick random song since there are no songs in the userdata/songs folder");
+        return "";
     }
     let tries = 0;
     while (++tries < 10) {
         let rdm_i = Math.round(Math.random() * files.length);
-        let picked_file = files[rdm_i] || '';
-        let split_name = picked_file.split('_');
+        let picked_file = files[rdm_i] || "";
+        let split_name = picked_file.split("_");
+        if (split_name[0] === last_song)
+            continue;
         switch (split_name[split_name.length - 1]) {
-            case 'vocals.wav': {
-                return split_name.slice(0, -1).join('_');
+            case "vocals.wav": {
+                return split_name.slice(0, -1).join("_");
             }
-            case 'instrumentals.wav': {
-                return split_name.slice(0, -1).join('_');
+            case "instrumentals.wav": {
+                return split_name.slice(0, -1).join("_");
             }
-            case 'info.txt': {
-                return split_name.slice(0, -1).join('_');
+            case "info.txt": {
+                return split_name.slice(0, -1).join("_");
             }
             default:
                 continue;
         }
     }
-    io_1.IO.warn('ERROR: Failed to pick song after multiple tries.');
-    return '';
+    io_1.IO.warn("ERROR: Failed to pick song after multiple tries.");
+    return "";
 }
 exports.pickRandomSong = pickRandomSong;

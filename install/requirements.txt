@@ -2,10 +2,10 @@ aiohttp==3.8.5
 pyaudio==0.2.13
 pynput==1.7.6
 websockets==11.0.3
-novelai-api==0.19.0
+novelai-api==0.22.0
 SpeechRecognition==3.10.0
 openai==0.27.8
-characterai==0.7.0
-numpy==1.24.3
+numpy==1.22.0
 sounddevice==0.4.6
 soundfile==0.12.1
+TTS==0.21.3

@@ -14,6 +14,5 @@ export function shouldUseEventSub(): boolean {
         );
         return false;
     }
-
     return true;
 }

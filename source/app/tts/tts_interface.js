@@ -14,6 +14,7 @@ var TTS_PLAY_ERROR;
 })(TTS_PLAY_ERROR || (exports.TTS_PLAY_ERROR = TTS_PLAY_ERROR = {}));
 class TtsGenerationSettings {
     voice = "galette";
+    is_narrator = false;
 }
 exports.TtsGenerationSettings = TtsGenerationSettings;
 class TtsPlaySettings {

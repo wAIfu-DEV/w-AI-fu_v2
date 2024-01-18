@@ -58,7 +58,7 @@ export class IO {
     }
 
     /**
-     * Similar to `console.log()`, but does not print to the UI.
+     * Similar to `IO.print()`, but does not print to the UI.
      * @param args arguments to stringify and print to console.
      */
     static quietPrint(...args: any[]) {

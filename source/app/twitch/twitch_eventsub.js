@@ -37,6 +37,7 @@ var EVENT_TYPE;
 (function (EVENT_TYPE) {
     EVENT_TYPE["FOLLOW"] = "channel.follow";
     EVENT_TYPE["SUBSCRIBE"] = "channel.subscribe";
+    EVENT_TYPE["SUBSCRIBE_MSG"] = "channel.subscription.message";
     EVENT_TYPE["GIFT_SUB"] = "channel.subscription.gift";
     EVENT_TYPE["BITS"] = "channel.cheer";
     EVENT_TYPE["RAID"] = "channel.raid";
@@ -57,6 +58,7 @@ var REQUEST_STATUS;
 class TwitchEventSubs {
     http_server = undefined;
     websocket = undefined;
+    old_websocket = undefined;
     websocket_session_id = undefined;
     user_id = undefined;
     user_token = undefined;
@@ -79,10 +81,11 @@ class TwitchEventSubs {
         reconnect: new Array(),
         follow: new Array(),
         subscribe: new Array(),
-        subscription_gifted: new Array(),
+        sub_message: new Array(),
+        gifted_sub: new Array(),
         cheer: new Array(),
         raid: new Array(),
-        channel_points_custom_reward_redemption: new Array(),
+        redeem: new Array(),
     };
     on(event, listener) {
         this.#listeners[event].push(listener);
@@ -112,18 +115,19 @@ class TwitchEventSubs {
             `?client_id=${Waifu_1.wAIfu.state.auth.twitch.twitchapp_clientid}` +
             `&redirect_uri=http://localhost:3000/callback` +
             `&response_type=token+id_token` +
-            `&scope=channel:read:subscriptions+moderator:read:followers+bits:read+openid+channel:manage:redemptions`;
+            `&scope=channel:read:subscriptions+moderator:read:followers+bits:read+openid+channel:manage:redemptions+moderator:manage:banned_users`;
         await electron_1.app.whenReady();
         let win = new electron_1.BrowserWindow({
             height: 900,
             width: 900,
             show: false,
+            alwaysOnTop: true,
         });
-        await win.loadURL(redirect_url);
         win.on("page-title-updated", (_, title) => {
             if (title !== "redirecting...")
                 win?.show();
         });
+        await win.loadURL(redirect_url);
     }
     async getTwitchUID(login, app_token) {
         let req = await fetch(`https://api.twitch.tv/helix/users?login=${login}`, {
@@ -172,14 +176,14 @@ class TwitchEventSubs {
     subscribeToEvents(user_id, user_token, session_id) {
         this.subscribeToEventSub(EVENT_TYPE.FOLLOW, "2", { broadcaster_user_id: user_id, moderator_user_id: user_id }, user_token, session_id);
         this.subscribeToEventSub(EVENT_TYPE.SUBSCRIBE, "1", { broadcaster_user_id: user_id }, user_token, session_id);
+        this.subscribeToEventSub(EVENT_TYPE.SUBSCRIBE_MSG, "1", { broadcaster_user_id: user_id }, user_token, session_id);
         this.subscribeToEventSub(EVENT_TYPE.GIFT_SUB, "1", { broadcaster_user_id: user_id }, user_token, session_id);
         this.subscribeToEventSub(EVENT_TYPE.BITS, "1", { broadcaster_user_id: user_id }, user_token, session_id);
         this.subscribeToEventSub(EVENT_TYPE.RAID, "1", { to_broadcaster_user_id: user_id }, user_token, session_id);
         this.subscribeToEventSub(EVENT_TYPE.REDEEM, "1", { broadcaster_user_id: user_id }, user_token, session_id);
     }
-    reconnectTwitchEventSubWebsocket() {
-        if (this.websocket !== undefined)
-            this.websocket.close();
+    reconnectTwitchEventSubWebsocket(new_url) {
+        this.createTwitchEventSubWebsocket(new_url);
         for (let listener of this.#listeners.reconnect)
             listener();
     }
@@ -188,6 +192,12 @@ class TwitchEventSubs {
         const msg_type = obj["metadata"]["message_type"];
         switch (msg_type) {
             case MESSAGE_TYPE.WELCOME: {
+                if (this.old_websocket !== undefined) {
+                    io_1.IO.quietPrint("Closing old EventSub WebSocket.");
+                    this.old_websocket.removeAllListeners();
+                    this.old_websocket.close();
+                    this.old_websocket = undefined;
+                }
                 io_1.IO.debug("Successfully connected to Twitch EventSub WebSocket.");
                 this.websocket_session_id = obj["payload"]["session"]["id"];
                 return;
@@ -197,7 +207,9 @@ class TwitchEventSubs {
             }
             case MESSAGE_TYPE.RECONNECT: {
                 io_1.IO.warn("Received reconnection message from Twich EventSub WebSocket.");
-                this.reconnectTwitchEventSubWebsocket();
+                const reconnect_url = obj["payload"]["session"]["reconnect_url"];
+                this.old_websocket = this.websocket;
+                this.reconnectTwitchEventSubWebsocket(reconnect_url);
                 return;
             }
             case MESSAGE_TYPE.NOTIFICATION: {
@@ -209,19 +221,27 @@ class TwitchEventSubs {
                 break;
         }
     }
-    async createTwitchEventSubWebsocket(url) {
-        this.websocket = new ws_1.default(url === null ? "wss://eventsub.wss.twitch.tv/ws" : url);
-        let ws = this.websocket;
-        ws.on("open", () => {
-            ws.on("ping", () => ws.pong());
-            ws.on("message", (data, _) => this.handleEventSubMessage(data, _));
-            ws.on("error", (err) => {
-                io_1.IO.warn("Error: Twitch Events WebSocket experienced an error.");
-                console.log(err);
-                this.reconnectTwitchEventSubWebsocket();
-            });
-            ws.on("close", (code, reason) => {
-                io_1.IO.print(`Closed Twitch Events WebSocket with message: ${code} ${reason.toString("utf8")}`);
+    createTwitchEventSubWebsocket(url) {
+        return new Promise((resolve) => {
+            let is_resolved = false;
+            this.websocket = new ws_1.default(url === undefined ? "wss://eventsub.wss.twitch.tv/ws" : url);
+            let ws = this.websocket;
+            ws.on("open", () => {
+                ws.on("ping", () => ws.pong());
+                ws.on("message", (data, _) => {
+                    this.handleEventSubMessage(data, _);
+                    if (is_resolved)
+                        return;
+                    is_resolved = true;
+                    resolve();
+                });
+                ws.on("error", (err) => {
+                    io_1.IO.warn("Error: Twitch Events WebSocket experienced an error.");
+                    console.log(err);
+                });
+                ws.on("close", (code, reason) => {
+                    io_1.IO.print(`Closed Twitch Events WebSocket with message: ${code} ${reason.toString("utf8")}`);
+                });
             });
         });
     }
@@ -265,6 +285,7 @@ class TwitchEventSubs {
             this.user_token = url_query["access_token"]?.toString();
             this.user_id_token = url_query["id_token"]?.toString();
             await this.validateUserToken();
+            await this.createTwitchEventSubWebsocket();
             if (this.websocket_session_id === undefined) {
                 io_1.IO.warn("ERROR: Received Auth token before WebSocket session ID.");
                 return;
@@ -296,7 +317,6 @@ class TwitchEventSubs {
             io_1.IO.warn("Could not connect to Twitch EventSub.\nw-AI-fu will continue without reading follows, subs and bits.\nFollow this tutorial to enable the feature: https://github.com/wAIfu-DEV/w-AI-fu/wiki/Follower,-Subscribers,-Bits-interactions");
             return;
         }
-        this.createTwitchEventSubWebsocket(null);
         this.http_server = http.createServer();
         let server = this.http_server;
         server.listen(3000, "127.0.0.1", () => {
@@ -307,11 +327,11 @@ class TwitchEventSubs {
     handleTwitchEvent(ev) {
         const event_type = ev["metadata"]["subscription_type"];
         const user_name = ev["payload"]["event"]["user_name"];
+        io_1.IO.print("RECEIVED TWITCH EVENT:", event_type);
         switch (event_type) {
             case EVENT_TYPE.FOLLOW: {
                 for (let listener of this.#listeners.follow)
                     listener({ user_name: user_name });
-                Waifu_1.wAIfu.state.command_queue.pushFront(`!say Thank you ${user_name} for following my channel!`);
                 return;
             }
             case EVENT_TYPE.SUBSCRIBE: {
@@ -321,28 +341,41 @@ class TwitchEventSubs {
                 let sub_tier = Number(ev["payload"]["event"]["tier"]) / 1_000;
                 for (let listener of this.#listeners.subscribe)
                     listener({ user_name: user_name, tier: sub_tier });
-                Waifu_1.wAIfu.state.command_queue.pushFront(`!say Thank you ${user_name} for your tier ${sub_tier} sub to my channel!`);
+                return;
+            }
+            case EVENT_TYPE.SUBSCRIBE_MSG: {
+                let sub_tier = Number(ev["payload"]["event"]["tier"]) / 1_000;
+                let message = ev["payload"]["event"]["message"]["text"];
+                for (let listener of this.#listeners.sub_message)
+                    listener({
+                        user_name: user_name,
+                        tier: sub_tier,
+                        message: message,
+                    });
                 return;
             }
             case EVENT_TYPE.GIFT_SUB: {
                 let anonymous = ev["payload"]["event"]["is_anonymous"];
                 let sub_tier = Number(ev["payload"]["event"]["tier"]) / 1_000;
                 let total = ev["payload"]["event"]["total"];
-                for (let listener of this.#listeners.subscribe)
+                for (let listener of this.#listeners.gifted_sub)
                     listener({
-                        user_name: user_name,
+                        user_name: anonymous ? "anonymous" : user_name,
                         tier: sub_tier,
                         amount: total,
                     });
-                Waifu_1.wAIfu.state.command_queue.pushFront(`!say Thank you ${anonymous ? "anonymous" : user_name} for your ${total} tier ${sub_tier} gifted subs to my channel!`);
                 return;
             }
             case EVENT_TYPE.BITS: {
                 let anonymous = ev["payload"]["event"]["is_anonymous"];
                 let bits = ev["payload"]["event"]["bits"];
+                let message = ev["payload"]["event"]["message"];
                 for (let listener of this.#listeners.cheer)
-                    listener({ user_name: user_name, bits: bits });
-                Waifu_1.wAIfu.state.command_queue.pushFront(`!say Thank you ${anonymous ? "anonymous" : user_name} for the ${bits} bits!`);
+                    listener({
+                        user_name: anonymous ? "anonymous" : user_name,
+                        bits: bits,
+                        message: message,
+                    });
                 return;
             }
             case EVENT_TYPE.RAID: {
@@ -350,20 +383,17 @@ class TwitchEventSubs {
                 let viewers = ev["payload"]["event"]["viewers"];
                 for (let listener of this.#listeners.raid)
                     listener({ from: from, viewers: viewers });
-                Waifu_1.wAIfu.state.memory.addMemory(`[ ${from} has raided the channel with their viewers! ]\n`);
-                Waifu_1.wAIfu.state.command_queue.pushFront(`!say Thank you ${from} for the raid!`);
                 return;
             }
             case EVENT_TYPE.REDEEM: {
-                let redeem_name = ev["payload"]["event"]["reward"]["title"];
-                for (let listener of this.#listeners
-                    .channel_points_custom_reward_redemption)
+                let reward_name = ev["payload"]["event"]["reward"]["title"];
+                for (let listener of this.#listeners.redeem)
                     listener({
                         user_name: user_name,
-                        redeem_name: redeem_name,
+                        reward_name: reward_name,
                     });
                 for (let plugin of Waifu_1.wAIfu.plugins)
-                    plugin.onTwitchRedeem(redeem_name, user_name);
+                    plugin.onTwitchRedeem(reward_name, user_name);
                 return;
             }
             default:

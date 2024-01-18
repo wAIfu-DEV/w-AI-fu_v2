@@ -60,7 +60,7 @@ class Plugin {
     }
     onInputSource() {
         let ret = this.#callEvent("input-source");
-        return typeof ret === "string" ? ret : undefined;
+        return ret === undefined ? undefined : ret;
     }
     onCommandHandling(command, trusted, username) {
         let ret = this.#callEvent("command-handling", command, trusted, username);

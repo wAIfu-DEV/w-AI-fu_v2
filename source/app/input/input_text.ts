@@ -1,14 +1,16 @@
 import * as readline from "readline";
 
-import { InputSystem, REJECT_REASON } from "./input_interface";
+import { IInputSystem, REJECT_REASON } from "./input_interface";
 import { wAIfu } from "../types/Waifu";
 import { Result } from "../types/Result";
 import { Message } from "../types/Message";
 import { IO } from "../io/io";
 
-export class InputSystemText implements InputSystem {
+export class InputSystemText implements IInputSystem {
     #cli_input_interface: readline.Interface;
     #interrupt_next: boolean;
+
+    input_text: string = "";
 
     constructor() {
         this.#cli_input_interface = readline.createInterface(

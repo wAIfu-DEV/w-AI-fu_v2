@@ -30,10 +30,11 @@ function getAllPresets_impl() {
     let files = fs.readdirSync(PRESETS_PATH, {
         encoding: "utf8",
         recursive: false,
-        withFileTypes: false
+        withFileTypes: false,
     });
     let ret_val = [];
-    for (let file of files) {
+    for (let i = files.length; i--;) {
+        let file = files[i];
         if (file.endsWith(".json") === false)
             continue;
         ret_val.push(file);

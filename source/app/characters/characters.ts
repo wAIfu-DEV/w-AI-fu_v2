@@ -1,15 +1,19 @@
-import * as fs from 'fs'
-import { Character } from './character';
-import { IO } from '../io/io';
-import { wAIfu } from '../types/Waifu';
-import { readParseJSON } from '../file_system/file_system';
-import { isOfClassDeep } from '../types/Helper';
+import * as fs from "fs";
+import { Character } from "./character";
+import { IO } from "../io/io";
+import { wAIfu } from "../types/Waifu";
+import { readParseJSON } from "../file_system/file_system";
+import { isOfClassDeep } from "../types/Helper";
 
 export function getCharByFileName(file_name: string): Character {
     let character = wAIfu.state!.characters[file_name];
 
     if (character === undefined) {
-        IO.warn('ERROR: Could not access character data for:', file_name, 'Please retry with another character.');
+        IO.warn(
+            "ERROR: Could not access character data for:",
+            file_name,
+            "Please retry with another character."
+        );
         return new Character();
     }
     return character;
@@ -22,30 +26,39 @@ export function getCurrentCharacter(): Character {
 /**
  * @returns a list of characters from the folder `userdata/characters`
  */
-export function retreiveCharacters(): Record<string, Character> {
+export function retrieveAllCharacters(): Record<string, Character> {
+    const CHARA_PATH = process.cwd() + "/userdata/characters/";
+    const SENTINEL_VAL = new Character();
 
-    let CHARA_PATH = process.cwd() + '/userdata/characters/';
+    const files = fs.readdirSync(CHARA_PATH, {
+        recursive: false,
+        encoding: "utf8",
+    });
+
     let result: Record<string, Character> = {};
-    let files = fs.readdirSync(CHARA_PATH, { recursive: false, encoding: 'utf8' });
 
     for (let f of files) {
+        const name_no_extension: string = f.replaceAll(/\..*/g, "");
+        const FPATH = CHARA_PATH + f;
 
-        let name_no_extension: string = f.replaceAll(/\..*/g, '');
-        const PATH = CHARA_PATH + f;
-
-        let parse_result = readParseJSON(PATH);
+        const parse_result = readParseJSON(FPATH);
         if (parse_result.success === false) {
-            IO.warn('Could not import character file', PATH);
+            IO.warn("Could not import character file", FPATH);
             continue;
         }
-        let parsed_obj = parse_result.value;
+        let char = parse_result.value;
 
-        let type_match = isOfClassDeep<Character>(parsed_obj, new Character(), { obj_name: 'character', add_missing_fields: true, print: true });
-        if (type_match === false) {
-            IO.warn('ERROR: Character file', PATH, 'failed the sanity check.');
+        let is_char_type = isOfClassDeep<Character>(char, SENTINEL_VAL, {
+            obj_name: "character",
+            add_missing_fields: true,
+            print: true,
+        });
+
+        if (!is_char_type) {
+            IO.warn("ERROR: Character file", FPATH, "failed the sanity check.");
             continue;
         }
-        result[name_no_extension] = parsed_obj as Character;
+        result[name_no_extension] = char as Character;
     }
     return result;
 }
@@ -56,6 +69,6 @@ export function retreiveCharacters(): Record<string, Character> {
  * @param char Character object
  */
 export function writeCharacter(file_name: string, char: Character) {
-    let CHARA_PATH = process.cwd() + '/userdata/characters/';
-    fs.writeFileSync(CHARA_PATH + file_name + '.json', JSON.stringify(char));
+    let CHARA_PATH = process.cwd() + "/userdata/characters/";
+    fs.writeFileSync(CHARA_PATH + file_name + ".json", JSON.stringify(char));
 }

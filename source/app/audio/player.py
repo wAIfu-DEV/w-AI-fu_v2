@@ -29,7 +29,6 @@ def handle(message, ws):
     try:
         match (prefix):
             case "PLAY_WAV":
-                print("WORKED", file=sys.stderr)
                 play_wav(file_id=file_id, device=options["device"])
             case "PLAY_MP3":
                 play_mp3(file_id=file_id, device=options["device"], volume_modifier=options["volume_modifier"])
