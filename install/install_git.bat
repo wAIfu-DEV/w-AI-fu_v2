@@ -7,8 +7,8 @@ set "gitInstallerURL=https://github.com/git-for-windows/git/releases/download/v2
 :: Specify the path to save the installer
 set "installerPath=%TEMP%\GitInstaller.exe"
 
-:: Download the Git installer
-curl -L -o "%installerPath%" "%gitInstallerURL%"
+:: Download the Git installer using PowerShell
+powershell -Command "& {Invoke-WebRequest -Uri '%gitInstallerURL%' -OutFile '%installerPath%'}"
 
 :: Install Git silently
 start /wait "" "%installerPath%" /VERYSILENT /NORESTART /CLOSEAPPLICATIONS /COMPONENTS="icons,ext\reg\shellhere,assoc,assoc_sh"
