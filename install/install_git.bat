@@ -2,7 +2,7 @@
 echo Installing Git for Windows...
 
 :: Specify the download URL for the Git installer
-set "gitInstallerURL=https://github.com/git-for-windows/git/releases/download/v2.35.0.windows.1/Git-2.35.0-64-bit.exe"
+set "gitInstallerURL=https://github.com/git-for-windows/git/releases/download/v2.43.0.windows.1/Git-2.43.0-64-bit.exe"
 
 :: Specify the path to save the installer
 set "installerPath=%TEMP%\GitInstaller.exe"
