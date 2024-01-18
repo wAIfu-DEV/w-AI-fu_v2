@@ -8,4 +8,3 @@ openai==0.27.8
 numpy==1.22.0
 sounddevice==0.4.6
 soundfile==0.12.1
-TTS==0.21.3
