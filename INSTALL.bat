@@ -37,6 +37,14 @@ if errorlevel 1 goto RetryPip
 
 call %PIP_PATH% install -r requirements.txt
 
+:: INSTALL GIT
+echo Installing Git...
+
+:: Check if Git is installed
+where %GIT_PATH% >nul 2>&1 || (
+  echo Git not found, installing...
+  call "%CWD%\install\install_git.bat"
+)
 
 ::CREATE SHORTCUT
 echo.
