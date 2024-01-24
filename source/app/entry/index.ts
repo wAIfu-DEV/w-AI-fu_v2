@@ -9,7 +9,6 @@ import { AppState } from "../state/state";
 import { freeDependencies } from "../dependencies/dependency_freeing";
 import { freePlugins } from "../plugins/free_plugins";
 import { checkUpdates } from "../update/should_update";
-import { isPythonInstalledPlusSetup } from "../check_python/check_python";
 import { TwitchEventSubs } from "../twitch/twitch_eventsub";
 import { shouldUseEventSub } from "../twitch/should_use_eventsub";
 import { setupTwitchEventSubListeners } from "../twitch/setup_event_handlers";
@@ -71,9 +70,6 @@ export async function main(): Promise<void> {
 
     wAIfu.version = wAIfu.getVersion();
     IO.print("w-AI-fu", wAIfu.version);
-
-    IO.debug("Checking python install...");
-    if (!isPythonInstalledPlusSetup()) return;
 
     IO.debug("Loading application state...");
     wAIfu.state = new AppState();

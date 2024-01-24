@@ -5,7 +5,7 @@ import { AppState } from "../state/state";
 import { Plugin } from "../plugins/plugin";
 
 export const ENV = {
-    PYTHON_PATH: "python",
+    PYTHON_PATH: process.cwd() + "\\venv\\Scripts\\python.exe",
 };
 
 export class WaifuApp {

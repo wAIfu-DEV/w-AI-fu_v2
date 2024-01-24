@@ -128,6 +128,7 @@ function handleUImessage_impl(ui, message) {
                 Waifu_1.wAIfu.state.auth = json_object;
                 (0, export_auth_1.writeAuth)(Waifu_1.wAIfu.state.auth);
                 io_1.IO.print("Updated auth.");
+                Waifu_1.wAIfu.dependencies.needs_reload = true;
             }
             break;
         case PREFIX_TYPE.INTERRUPT:

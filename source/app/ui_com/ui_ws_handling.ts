@@ -163,6 +163,7 @@ export function handleUImessage_impl(ui: UserInterface, message: string) {
                 wAIfu.state!.auth = json_object as Auth;
                 writeAuth(wAIfu.state!.auth);
                 IO.print("Updated auth.");
+                wAIfu.dependencies!.needs_reload = true;
             }
             break;
         case PREFIX_TYPE.INTERRUPT:
