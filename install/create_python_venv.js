@@ -11,14 +11,10 @@ const nodepath = require("path");
 const MINIMUM_PYTHON_VERSION_STR = "3.10.11";
 const MINIMUM_PYTHON_VERSION = 310.11;
 
-const MAXIMUM_PYTHON_VERSION_STR = "3.12.1";
-const MAXIMUM_PYTHON_VERSION = 312.1;
+const MAXIMUM_PYTHON_VERSION_STR = "3.11.XX";
+const MAXIMUM_PYTHON_VERSION = 311.99;
 
-const SUPPORTED_PY_INSTALL_PATHS = [
-    "\\Python310\\",
-    "\\Python311\\",
-    "\\Python312\\",
-];
+const SUPPORTED_PY_INSTALL_PATHS = ["\\Python310\\", "\\Python311\\"];
 
 /**
  * Parses a version string and returns a version as number
