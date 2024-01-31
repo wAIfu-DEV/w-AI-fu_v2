@@ -34,6 +34,7 @@ if %errorlevel% neq 0 (
 ::INSTALL PIP PACKAGES
 echo Installing python dependencies ...
 call %PIP_PATH% install -r requirements.txt
+::call %PIP_PATH% install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 :: INSTALL GIT
 echo Checking if Git is installed...
