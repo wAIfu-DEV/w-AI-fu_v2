@@ -22,6 +22,17 @@ call %NPM_PATH% install
 
 cd install
 
+:: INSTALL GIT
+echo Checking if Git is installed...
+:: Check if Git is installed
+git --version >nul 2>&1
+if %errorlevel% neq 0 (
+  echo Git not found, installing...
+  call "%CWD%\install\install_git.bat"
+) else (
+  echo Git is already installed.
+)
+
 ::CREATE PYTHON VENV
 call %NODE_PATH% create_python_venv.js
 if %errorlevel% neq 0 (
@@ -35,18 +46,6 @@ if %errorlevel% neq 0 (
 echo Installing python dependencies ...
 call %PIP_PATH% install -r requirements.txt
 ::call %PIP_PATH% install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
-:: INSTALL GIT
-echo Checking if Git is installed...
-
-:: Check if Git is installed
-git --version >nul 2>&1
-if %errorlevel% neq 0 (
-  echo Git not found, installing...
-  call "%CWD%\install\install_git.bat"
-) else (
-  echo Git is already installed.
-)
 
 ::CREATE SHORTCUT
 echo.
