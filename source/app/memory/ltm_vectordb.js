@@ -47,13 +47,31 @@ class LongTermMemoryVectorDB {
             io_1.IO.warn("First time setup of vector database, this might take some time (~3GB)...");
             fs.mkdirSync(VENV_PATH);
             io_1.IO.warn("- Creating python venv... (~30s)");
-            cproc.spawnSync(Waifu_1.ENV.PYTHON_PATH, ["-m", "venv", VENV_PATH]);
+            const venv_creation_result = cproc.spawnSync(Waifu_1.ENV.PYTHON_PATH, [
+                "-m",
+                "venv",
+                VENV_PATH,
+            ]);
+            venv_creation_result.output.forEach((v) => {
+                if (!v)
+                    return;
+                let s = v.toString("utf8");
+                if (s !== "")
+                    io_1.IO.quietPrint(s);
+            });
             io_1.IO.warn("- Installing dependencies... (~4min)");
-            cproc.spawnSync(VENV_PIP, [
+            const dep_install_result = cproc.spawnSync(VENV_PIP, [
                 "install",
                 "-r",
                 VDB_CWD + "/requirements.txt",
             ]);
+            dep_install_result.output.forEach((v) => {
+                if (!v)
+                    return;
+                let s = v.toString("utf8");
+                if (s !== "")
+                    io_1.IO.quietPrint(s);
+            });
         }
         this.#child_process = cproc.spawn(VENV_PYTHON, ["vectordb_test.py"], {
             cwd: process.cwd() + "/source/app/vectordb/",

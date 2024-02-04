@@ -20,11 +20,10 @@ from novelai_api.utils import b64_to_tokens
 os.system('title w-AI-fu NovelAI LLM')
 
 
-default_model_presets = {
-    Model.Kayra: "Carefree",
-    Model.Clio: "Fresh Coffee",
-    Model.Euterpe: "Basic Coherence"
-}
+default_model_presets = {}
+default_model_presets[Model.Kayra] = "Carefree"
+default_model_presets[Model.Clio] = "Fresh Coffee"
+default_model_presets[Model.Euterpe] = "Basic Coherence"
 
 model_name: str = "Kayra"
 model: Model = Model.Kayra

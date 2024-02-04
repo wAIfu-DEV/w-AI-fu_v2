@@ -29,13 +29,30 @@ export class LongTermMemoryVectorDB implements ILongTermMemory {
             );
             fs.mkdirSync(VENV_PATH);
             IO.warn("- Creating python venv... (~30s)");
-            cproc.spawnSync(ENV.PYTHON_PATH, ["-m", "venv", VENV_PATH]);
+            const venv_creation_result = cproc.spawnSync(ENV.PYTHON_PATH, [
+                "-m",
+                "venv",
+                VENV_PATH,
+            ]);
+
+            venv_creation_result.output.forEach((v) => {
+                if (!v) return;
+                let s = v.toString("utf8");
+                if (s !== "") IO.quietPrint(s);
+            });
+
             IO.warn("- Installing dependencies... (~4min)");
-            cproc.spawnSync(VENV_PIP, [
+            const dep_install_result = cproc.spawnSync(VENV_PIP, [
                 "install",
                 "-r",
                 VDB_CWD + "/requirements.txt",
             ]);
+
+            dep_install_result.output.forEach((v) => {
+                if (!v) return;
+                let s = v.toString("utf8");
+                if (s !== "") IO.quietPrint(s);
+            });
         }
 
         this.#child_process = cproc.spawn(VENV_PYTHON, ["vectordb_test.py"], {

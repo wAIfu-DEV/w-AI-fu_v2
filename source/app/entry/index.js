@@ -12,7 +12,6 @@ const state_1 = require("../state/state");
 const dependency_freeing_1 = require("../dependencies/dependency_freeing");
 const free_plugins_1 = require("../plugins/free_plugins");
 const should_update_1 = require("../update/should_update");
-const check_python_1 = require("../check_python/check_python");
 const twitch_eventsub_1 = require("../twitch/twitch_eventsub");
 const should_use_eventsub_1 = require("../twitch/should_use_eventsub");
 const setup_event_handlers_1 = require("../twitch/setup_event_handlers");
@@ -63,9 +62,6 @@ async function main() {
     process.title = "w-AI-fu";
     Waifu_1.wAIfu.version = Waifu_1.wAIfu.getVersion();
     io_1.IO.print("w-AI-fu", Waifu_1.wAIfu.version);
-    io_1.IO.debug("Checking python install...");
-    if (!(0, check_python_1.isPythonInstalledPlusSetup)())
-        return;
     io_1.IO.debug("Loading application state...");
     Waifu_1.wAIfu.state = new state_1.AppState();
     io_1.IO.debug("Fetching audio devices...");
