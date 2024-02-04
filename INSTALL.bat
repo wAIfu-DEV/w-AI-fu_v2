@@ -37,6 +37,7 @@ if %errorlevel% neq 0 (
 call %NODE_PATH% create_python_venv.js
 if %errorlevel% neq 0 (
   echo Error when creating Python venv, aborting.
+  pause
   goto:eof
 ) else (
   echo Successfuly created Python venv.
@@ -53,10 +54,8 @@ echo Creating shortcut ...
 
 call cscript /b create_shortcut.vbs
 
-
 ::END OF NORMAL EXECUTION
 echo Done.
-
 pause
 goto:eof
 
