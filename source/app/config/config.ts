@@ -386,7 +386,7 @@ export class Config {
             hint: "Model used when selecting openai as LLM provider.",
             reload: false,
             type: "select",
-            options: ["gpt-3.5-turbo", "gpt-4"],
+            options: ["gpt-3.5-turbo", "gpt-4", "gpt-4o-mini", "llama-3.1-70b-versatile"],
             default: "gpt-3.5-turbo",
             value: "gpt-3.5-turbo",
         }),
